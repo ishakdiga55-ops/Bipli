@@ -1,0 +1,173 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; }
+
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif;
+  background: radial-gradient(circle at top, #1e293b 0%, #0f172a 70%);
+  color: #e2e8f0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+}
+
+.app { width: 100%; max-width: 440px; }
+
+.card {
+  position: relative;
+  overflow: hidden;
+  background: rgba(30, 41, 59, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 28px;
+  padding: 40px 24px 28px;
+  text-align: center;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  transition: all 0.4s ease;
+}
+
+.pulse {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.18);
+  transform: translate(-50%, -50%);
+  animation: pulseAnim 3s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+@keyframes pulseAnim {
+  0%, 100% { transform: translate(-50%, -50%) scale(1);   opacity: 0.5; }
+  50%      { transform: translate(-50%, -50%) scale(2.6); opacity: 0; }
+}
+
+.card > * { position: relative; z-index: 1; }
+
+.label {
+  font-size: 13px;
+  color: #94a3b8;
+  letter-spacing: 2px;
+  font-weight: 500;
+}
+
+.order-number {
+  font-size: 64px;
+  font-weight: 800;
+  margin: 6px 0 22px;
+  background: linear-gradient(135deg, #60a5fa, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  direction: ltr;
+  line-height: 1.1;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 9px 22px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  background: rgba(148, 163, 184, 0.15);
+  color: #cbd5e1;
+  transition: all 0.3s ease;
+}
+.status-badge.waiting   { background: rgba(234, 179, 8, 0.15);  color: #facc15; }
+.status-badge.preparing { background: rgba(59, 130, 246, 0.18); color: #60a5fa; }
+.status-badge.ready {
+  background: rgba(34, 197, 94, 0.22);
+  color: #4ade80;
+  animation: readyGlow 1.4s ease-in-out infinite;
+}
+@keyframes readyGlow {
+  0%, 100% { box-shadow: 0 0 0 0    rgba(34, 197, 94, 0.6); }
+  50%      { box-shadow: 0 0 0 14px rgba(34, 197, 94, 0); }
+}
+
+.message {
+  margin-top: 22px;
+  font-size: 15px;
+  color: #cbd5e1;
+  line-height: 1.8;
+  min-height: 3em;
+}
+
+.card.is-ready {
+  border-color: rgba(34, 197, 94, 0.5);
+  box-shadow: 0 0 60px rgba(34, 197, 94, 0.35);
+  animation: shake 0.55s ease-in-out 3;
+}
+.card.is-ready .pulse {
+  background: rgba(34, 197, 94, 0.3);
+  animation-duration: 1s;
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-8px); }
+  40%      { transform: translateX(8px); }
+  60%      { transform: translateX(-5px); }
+  80%      { transform: translateX(5px); }
+}
+
+.btn-enable, .btn-stop {
+  margin-top: 22px;
+  padding: 13px 26px;
+  border: none;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.12s, opacity 0.2s;
+}
+.btn-enable {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  color: white;
+  animation: bounce 1.6s ease-in-out infinite;
+}
+.btn-stop {
+  background: #22c55e;
+  color: white;
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+}
+.btn-enable:active, .btn-stop:active { transform: scale(0.96); }
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}
+
+.hint {
+  margin-top: 18px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.brand-footer {
+  margin-top: 24px;
+  font-size: 11px;
+  color: #475569;
+  letter-spacing: 1px;
+}
+.brand-footer strong { color: #94a3b8; }
+
+.error {
+  margin-top: 20px;
+  padding: 16px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 14px;
+  color: #fca5a5;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.7;
+}
