@@ -8,10 +8,7 @@ const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { 
-  cors: { origin: '*', methods: ['GET', 'POST'] },
-  pingTimeout: 60000 // إبقاء الاتصال نشطاً
-});
+const io = new Server(server, { cors: { origin: '*' } });
 
 app.use(cors());
 app.use(express.json());
@@ -21,26 +18,14 @@ app.use(express.static(frontendPath));
 
 app.get('/', (req, res) => res.redirect('/cashier/'));
 
-// ===== المخزن =====
 const orders = new Map();
 
-// API احترافي لجلب الطلب
-app.get('/api/orders/:id', (req, res) => {
-  const order = orders.get(req.params.id);
-  if (!order) return res.status(404).json({ success: false, error: 'Order not found' });
-  res.json({ success: true, data: order });
-});
-
 io.on('connection', (socket) => {
-  console.log(`[SOCKET] Connected: ${socket.id}`);
-
-  // ===== الكاشير =====
   socket.on('join-cashier', () => {
     socket.join('cashier-room');
     socket.emit('orders-snapshot', Array.from(orders.values()));
   });
 
-  // إنشاء طلب مع توليد QR في الخادم (احترافي)
   socket.on('create-order', async ({ number }, callback) => {
     try {
       const num = (number || '').toString().trim();
@@ -48,37 +33,23 @@ io.on('connection', (socket) => {
 
       const id = uuidv4();
       const origin = process.env.NODE_ENV === 'production' 
-        ? 'https://bipli-1.onrender.com' // ضع رابطك هنا
+        ? 'https://bipli-1.onrender.com' 
         : 'http://localhost:3000';
       
       const customerUrl = `${origin}/customer/?id=${id}`;
-      
-      // توليد صورة الـ QR كـ Base64
-      const qrDataUrl = await QRCode.toDataURL(customerUrl, { 
-        width: 300, 
-        margin: 2,
-        color: { dark: '#0f172a', light: '#ffffff' }
-      });
+      const qrDataUrl = await QRCode.toDataURL(customerUrl, { width: 300, margin: 2 });
 
       const order = {
-        id,
-        number: num,
-        status: 'waiting',
-        createdAt: Date.now(),
-        readyAt: null,
-        qrDataUrl, // نحفظ الصورة الجاهزة
-        customerUrl
+        id, number: num, status: 'waiting', createdAt: Date.now(), readyAt: null,
+        qrDataUrl, customerUrl
       };
 
       orders.set(id, order);
       
-      // إرسال للكاشير فقط (بدون الصورة لتخفيف البيانات)
-      const { qrDataUrl: _, customerUrl: __, ...orderForCashier } = order;
-      io.to('cashier-room').emit('order-created', orderForCashier);
-      
-      callback({ ok: true, order }); // نرسل الطلب كاملاً (مع الصورة) للذي أنشأه فقط
+      // إرسال الطلب بالصورة للكاشير
+      io.to('cashier-room').emit('order-created', order);
+      callback({ ok: true, order });
     } catch (error) {
-      console.error('[ERROR] create-order:', error.message);
       callback({ ok: false, error: error.message });
     }
   });
@@ -90,12 +61,11 @@ io.on('connection', (socket) => {
     order.status = status;
     if (status === 'ready') order.readyAt = Date.now();
     
+    // إرسال التحديث بدون الصورة (لتخفيف البيانات أثناء التحديث)
     const { qrDataUrl, customerUrl, ...orderData } = order;
     
-    // إبلاغ العميل
     io.to(`order-${id}`).emit(status === 'ready' ? 'order-ready' : 'order-updated', orderData);
-    // إبلاغ الكاشير
-    io.to('cashier-room').emit('order-updated', orderData);
+    io.to('cashier-room').emit('order-updated', orderData); // الكاشير سيحدث الحالة فقط ويحتفظ بالصورة في الذاكرة
     
     callback && callback({ ok: true });
   });
@@ -107,22 +77,14 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ===== العميل =====
   socket.on('join-order', ({ id }, callback) => {
     const order = orders.get(id);
     if (!order) return callback && callback({ ok: false });
-    
     socket.join(`order-${id}`);
     const { qrDataUrl, customerUrl, ...orderData } = order;
     callback({ ok: true, order: orderData });
   });
-
-  socket.on('disconnect', () => {
-    console.log(`[SOCKET] Disconnected: ${socket.id}`);
-  });
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+server.listen(PORT, () => console.log(`Server running on ${PORT}`));
