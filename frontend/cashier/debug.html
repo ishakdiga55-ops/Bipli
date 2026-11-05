@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>فحص الأخطاء - Bipli</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body { font-family: sans-serif; background: #0f172a; color: white; padding: 20px; text-align: center; }
+    .box { background: #1e293b; padding: 20px; border-radius: 10px; margin-top: 20px; }
+    img { width: 250px; height: 250px; background: white; margin-top: 10px; border-radius: 10px; display: none; }
+    button { padding: 10px 20px; font-size: 16px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; }
+    #log { color: #4ade80; font-family: monospace; margin-top: 15px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h2>أداة فحص الكود</h2>
+  <button onclick="testQR()">اضغط هنا لتوليد كود تجريبي</button>
+  
+  <div class="box">
+    <p>حالة الصورة:</p>
+    <div id="log">في انتظار الضغط...</div>
+    <img id="test-img" onload="document.getElementById('log').innerHTML='✅ نجحت الصورة! الخادم يرسل الكود بشكل سليم.';" onerror="document.getElementById('log').innerHTML='❌ فشلت الصورة! الخادم يرسل رابطاً فارغاً أو تالفاً.';" />
+  </div>
+
+  <script>
+    const socket = io();
+    
+    function testQR() {
+      document.getElementById('log').innerHTML = 'جاري الاتصال بالخادم...';
+      socket.emit('create-order', { number: 'TEST-999' }, (res) => {
+        if (res && res.ok) {
+          const order = res.order;
+          document.getElementById('log').innerHTML = 'تم الاتصال. جاري فحص البيانات...<br>' + 
+                                                     'هل يوجد رابط صورة؟ ' + (order.qrDataUrl ? 'نعم (طوله: ' + order.qrDataUrl.length + ' حرف)' : 'لا!');
+          
+          if (order.qrDataUrl) {
+            const img = document.getElementById('test-img');
+            img.src = order.qrDataUrl;
+            img.style.display = 'block';
+          } else {
+            document.getElementById('log').innerHTML += '<br>❌ الخادم لم يرسل صورة (qrDataUrl غير موجود).';
+          }
+        } else {
+          document.getElementById('log').innerHTML = '❌ فشل الاتصال بالخادم.';
+        }
+      });
+    }
+  </script>
+</body>
+</html>
