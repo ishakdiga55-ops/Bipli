@@ -19,6 +19,11 @@ app.use(express.json());
 const frontendPath = path.join(__dirname, '..', 'frontend');
 app.use(express.static(frontendPath));
 
+// توجيه الصفحة الرئيسية إلى واجهة الكاشير تلقائياً
+app.get('/', (req, res) => {
+  res.redirect('/cashier/');
+});
+
 // ===== المخزن (in-memory) =====
 // orders: Map<id, { id, number, status, createdAt, readyAt }>
 const orders = new Map();
