@@ -4,12 +4,123 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bipli | لوحة التحكم</title>
+  
+  <!-- خط Cairo -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
   
-  <!-- تمت إضافة v=3 لتحديث التصميم -->
-  <link rel="stylesheet" href="style.css?v=3" />
+  <!-- كود التصميم (CSS) -->
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --bg-darker: #020617;
+      --card-bg: #1e293b;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --text-main: #f8fafc;
+      --مtext-muted: #94a3b8;
+ بح      --border: rgba(ذفه255, 255, وإن 255, 0.1);
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --radius: 16px;
+      --font: 'Cairo', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font); }
+    body {
+      background-color: var(--bg-darker);
+      background-image: radial-gradient(circle at top right, rgba(99, 102, 241, 0.1), transparent 40%);
+      color: var(--text-main);
+      min-height: 100vh;
+    }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 32px; background: var(--bg-dark);
+      border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .logo-icon { font-size: 28px; }
+    .brand h1 {
+      font-size: 24px; font-weight: 800;
+      background: linear-gradient(to right, #818cf8, #c084fc);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .status { padding: 6px 16px; border-radius: 50px; font-size: 13px; font-weight: 600; }
+    .status.online { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+    .status.offline { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+    .dashboard { max-width: 1200px; margin: 0 auto; padding: 32px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 32px; }
+    .stat-card {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px; display: flex; flex-direction: column; gap: 8px;
+      position: relative; overflow: hidden;
+    }
+    .stat-card::before { content: ''; position: absolute; top: 0; right: 0; width: 4px; height: 100%; background: var(--primary); }
+    .stat-card.warning::before { background: var(--warning); }
+    .stat-card.success::before { background: var(--success); }
+    .stat-title { font-size: 14px; color: var(--text-muted); font-weight: 600; }
+    .stat-value { font-size: 32px; font-weight: 800; }
+    .layout-grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 24px; align-items: start; }
+    @media (max-width: 900px) { .layout-grid, .stats-grid { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px; box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+    }
+    .card-header { margin-bottom: 20px; }
+    .card-header h2 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .card-header p { font-size: 13px; color: var(--text-muted); }
+    .modern-form .input-group { display: flex; flex-direction: column; gap: 12px; }
+    input[type="text"] {
+      width: 100%; padding: 16px; background: var(--bg-dark);
+      border: 1px solid var(--border); border-radius: 12px; color: white; font-size: 16px;
+    }
+    input[type="text"]:focus { outline: none; border-color: var(--primary); }
+    button {
+      background: var(--primary); color: white; border: none; padding: 16px;
+      border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer;
+      display: flex; justify-content: center; align-items: center; gap: 8px; transition: all 0.3s;
+    }
+    button:hover { background: var(--primary-hover); }
+    button:disabled { opacity: 0.7; cursor: not-allowed; }
+    .orders-list { display: flex; flex-direction: column; gap: 12px; max-height: 500px; overflow-y: auto; }
+    .empty { text-align: center; color: var(--text-muted); padding: 40px 0; }
+    .order-card {
+      background: var(--bg-dark); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .order-card.waiting { border-right: 4px solid var(--warning); }
+    .order-card.preparing { border-right: 4px solid var(--primary); }
+    .order-card.ready { border-right: 4px solid var(--success); }
+    .order-info { display: flex; flex-direction: column; gap: 4px; }
+    .order-number { font-size: 20px; font-weight: 800; }
+    .order-status { font-size: 13px; color: var(--text-muted); }
+    .order-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .order-actions button { padding: 8px 16px; font-size: 13px; border-radius: 8px; }
+    .btn-prepare { background: #3b82f6; }
+    .btn-ready { background: var(--success); }
+    .btn-qr { background: #475569; }
+    .btn-delete { background: var(--danger); }
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(2, 6, 23, 0.95);
+      display: flex; justify-content: center; align-items: center; z-index: 1000; padding: 20px;
+    }
+    .modal-content {
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: 24px;
+      width: 100%; max-width: 400px; overflow: hidden;
+    }
+    .modal-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
+    .modal-header h2 { font-size: 16px; }
+    .close-btn { background: none; color: white; font-size: 24px; padding: 0; }
+    .qr-container { padding: 24px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+    .qr-wrapper { background: white; padding: 16px; border-radius: 16px; width: 250px; height: 250px; display: flex; justify-content: center; align-items: center; }
+    #qr-image { width: 100%; height: 100%; object-fit: contain; }
+    .qr-info { text-align: center; }
+    .highlight-text { font-size: 28px; font-weight: 800; color: var(--primary); }
+    .toast-container { position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 10px; z-index: 2000; }
+    .toast { background: var(--bg-dark); padding: 14px 20px; border-radius: 12px; border-right: 4px solid var(--primary); color: white; }
+  </style>
+
   <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
@@ -74,7 +185,11 @@
       </div>
       <div class="qr-container">
         <div class="qr-wrapper">
-          <img id="qr-image" src="" alt="QR Code" style="width: 220px; height: 220px; display: block;" />
+          <!-- حماية: إذا فشلت الصورة سيظهر تنبيه بدلاً من المربع المكسور -->
+          <img id="qr-image" src="" alt="" onerror="this.style.display='none'; document.getElementById('qr-error-msg').style.display='block';" onload="this.style.display='block'; document.getElementById('qr-error-msg').style.display='none';" />
+          <div id="qr-error-msg" style="display: none; color: #ef4444; font-weight: bold; text-align: center; font-size: 14px;">
+            ⚠️ تعذر تحميل الصورة.<br>هذا الطلب قديم، قشاء طلب جديد.
+          </div>
         </div>
         <div class="qr-info">
           <span class="label">رقم الطلب</span>
@@ -86,8 +201,176 @@
   </div>
 
   <div id="toast-container" class="toast-container"></div>
-  
-  <!-- تمت إضافة v=3 هنا أيضاً -->
-  <script src="app.js?v=3"></script>
+
+  <!-- كود البرمجة (JavaScript) -->
+  <script>
+    const socket = io();
+    const DOM = {
+      status: document.getElementById('status'),
+      form: document.getElementById('create-form'),
+      input: document.getElementById('order-number'),
+      submitBtn: document.getElementById('submit-btn'),
+      qrSection: document.getElementById('qr-section'),
+      qrImage: document.getElementById('qr-image'),
+      qrOrderNumber: document.getElementById('qr-order-number'),
+      closeQrBtn: document.getElementById('close-qr'),
+      ordersList: document.getElementById('orders-list'),
+      toastContainer: document.getElementById('toast-container'),
+      statTotal: document.getElementById('stat-total'),
+      statWaiting: document.getElementById('stat-waiting'),
+      statReady: document.getElementById('stat-ready')
+    };
+
+    let orders = {};
+
+    function showToast(message, type = 'success') {
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.textContent = message;
+      DOM.toastContainer.appendChild(toast);
+      setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
+    }
+
+    socket.on('connect', () => {
+      DOM.status.textContent = 'متصل';
+      DOM.status.className = 'status online';
+      socket.emit('join-cashier');
+    });
+
+    socket.on('disconnect', () => {
+      DOM.status.textContent = 'غير متصل';
+      DOM.status.className = 'status offline';
+    });
+
+    socket.on('orders-snapshot', (list) => {
+      orders = Object.fromEntries(list.map(o => [o.id, o]));
+      renderOrders();
+    });
+
+    socket.on('order-created', (order) => {
+      orders[order.id] = order;
+      renderOrders();
+    });
+
+    socket.on('order-updated', (order) => {
+      orders[order.id] = order;
+      renderOrders();
+    });
+
+    socket.on('order-deleted', ({ id }) => {
+      delete orders[id];
+      renderOrders();
+    });
+
+    DOM.form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const number = DOM.input.value.trim();
+      if (!number) return;
+
+      DOM.submitBtn.disabled = true;
+      DOM.submitBtn.innerHTML = 'جاري الإنشاء...';
+
+      socket.emit('create-order', { number }, (res) => {
+        DOM.submitBtn.disabled = false;
+        DOM.submitBtn.innerHTML = '<span>توليد الـ QR</span>';
+
+        if (res && res.ok) {
+          DOM.input.value = '';
+          showQrModal(res.order);
+          showToast('تم إنشاء الطلب بنجاح');
+        } else {
+          showToast(res.error || 'حدث خطأ', 'error');
+        }
+      });
+    });
+
+    function showQrModal(order) {
+      if (!order) return;
+      
+      // التحقق من وجود الصورة
+      if (!order.qrDataUrl) {
+        alert('هذا الطلب قديم. يرجى حذفه وإنشاء طلب جديد.');
+        return; 
+      }
+      
+      DOM.qrOrderNumber.textContent = order.number;
+      DOM.qrImage.src = order.qrDataUrl; 
+      DOM.qrSection.hidden = false;
+    }
+
+    DOM.closeQrBtn.addEventListener('click', () => {
+      DOM.qrSection.hidden = true;
+      DOM.qrImage.src = '';
+    });
+
+    function renderOrders() {
+      const list = Object.values(orders).sort((a, b) => b.createdAt - a.createdAt);
+
+      DOM.statTotal.textContent = list.length;
+      DOM.statWaiting.textContent = list.filter(o => o.status === 'waiting' || o.status === 'preparing').length;
+      DOM.statReady.textContent = list.filter(o => o.status === 'ready').length;
+
+      if (list.length === 0) {
+        DOM.ordersList.innerHTML = '<p class="empty">لا توجد طلبات حالياً</p>';
+        return;
+      }
+
+      DOM.ordersList.innerHTML = '';
+      
+      list.forEach((order) => {
+        const card = document.createElement('div');
+        card.className = `order-card ${order.status}`;
+
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'order-info';
+        
+        const numSpan = document.createElement('span');
+        numSpan.className = 'order-number';
+        numSpan.textContent = `#${order.number}`;
+        
+        const statusSpan = document.createElement('span');
+        statusSpan.className = 'order-status';
+        statusSpan.textContent = statusLabel(order.status);
+        
+        infoDiv.append(numSpan, statusSpan);
+
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'order-actions';
+
+        const createBtn = (text, className, onClick) => {
+          const btn = document.createElement('button');
+          btn.className = className;
+          btn.textContent = text;
+          btn.addEventListener('click', onClick);
+          return btn;
+        };
+
+        if (order.status === 'waiting') {
+          actionsDiv.appendChild(createBtn('تحضير', 'btn-prepare', () => updateStatus(order.id, 'preparing')));
+        }
+        if (order.status !== 'ready') {
+          actionsDiv.appendChild(createBtn('جاهز', 'btn-ready', () => updateStatus(order.id, 'ready')));
+        }
+        
+        actionsDiv.appendChild(createBtn('QR', 'btn-qr', () => showQrModal(order)));
+
+        actionsDiv.appendChild(createBtn('حذف', 'btn-delete', () => {
+          if (confirm('حذف هذا الطلب؟')) socket.emit('delete-order', { id: order.id });
+        }));
+
+        card.append(infoDiv, actionsDiv);
+        DOM.ordersList.appendChild(card);
+      });
+    }
+
+    function updateStatus(id, status) {
+      socket.emit('update-status', { id, status });
+    }
+
+    function statusLabel(s) {
+      const labels = { waiting: 'قيد الانتظار', preparing: 'قيد التحضير', ready: 'جاهز ✓' };
+      return labels[s] || s;
+    }
+  </script>
 </body>
 </html>
