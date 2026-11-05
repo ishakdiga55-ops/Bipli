@@ -8,8 +8,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
-  <!-- المكتبة التي سترسم الكود داخل الهاتف -->
-  <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
+  
+  <!-- مكتبة رسم الكود داخل المتصفح (رابط موثوق جداً) -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  
   <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
@@ -50,7 +52,6 @@
             <input type="text" id="order-number" placeholder="مثال: 42 أو A-15" required autocomplete="off" />
             <button type="submit" id="submit-btn">
               <span>توليد الـ QR</span>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </button>
           </div>
         </form>
@@ -75,7 +76,6 @@
       </div>
       <div class="qr-container">
         <div class="qr-wrapper">
-          <!-- استخدمنا canvas بدلاً من img -->
           <canvas id="qr-canvas"></canvas>
         </div>
         <div class="qr-info">
