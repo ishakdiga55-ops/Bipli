@@ -9,7 +9,10 @@ const DOM = {
   qrOrderNumber: document.getElementById('qr-order-number'),
   closeQrBtn: document.getElementById('close-qr'),
   ordersList: document.getElementById('orders-list'),
-  toastContainer: document.getElementById('toast-container')
+  toastContainer: document.getElementById('toast-container'),
+  statTotal: document.getElementById('stat-total'),
+  statWaiting: document.getElementById('stat-waiting'),
+  statReady: document.getElementById('stat-ready')
 };
 
 let orders = {};
@@ -20,11 +23,7 @@ function showToast(message, type = 'success') {
   toast.className = `toast toast-${type}`;
   toast.textContent = message;
   DOM.toastContainer.appendChild(toast);
-  
-  setTimeout(() => {
-    toast.style.opacity = '0';
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
+  setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
 }
 
 /* ===== الاتصال ===== */
@@ -32,13 +31,11 @@ socket.on('connect', () => {
   DOM.status.textContent = 'متصل';
   DOM.status.className = 'status online';
   socket.emit('join-cashier');
-  showToast('تم الاتصال بالخادم', 'success');
 });
 
 socket.on('disconnect', () => {
   DOM.status.textContent = 'غير متصل';
   DOM.status.className = 'status offline';
-  showToast('انقطع الاتصال!', 'error');
 });
 
 /* ===== استقبال البيانات ===== */
@@ -68,13 +65,12 @@ DOM.form.addEventListener('submit', (e) => {
   const number = DOM.input.value.trim();
   if (!number) return;
 
-  // حالة التحميل لمنع النقر المتكرر
   DOM.submitBtn.disabled = true;
-  DOM.submitBtn.textContent = 'جاري الإنشاء...';
+  DOM.submitBtn.innerHTML = '<span>جاري الإنشاء...</span>';
 
   socket.emit('create-order', { number }, (res) => {
     DOM.submitBtn.disabled = false;
-    DOM.submitBtn.textContent = 'إنشاء QR';
+    DOM.submitBtn.innerHTML = '<span>توليد الـ QR</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
 
     if (res && res.ok) {
       DOM.input.value = '';
@@ -89,19 +85,23 @@ DOM.form.addEventListener('submit', (e) => {
 /* ===== عرض QR ===== */
 function showQrModal(order) {
   DOM.qrOrderNumber.textContent = order.number;
-  DOM.qrImage.src = order.qrDataUrl; // الصورة جاهزة من الخادم
+  DOM.qrImage.src = order.qrDataUrl;
   DOM.qrSection.hidden = false;
-  DOM.qrSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 DOM.closeQrBtn.addEventListener('click', () => {
   DOM.qrSection.hidden = true;
-  DOM.qrImage.src = ''; // تنظيف الذاكرة
+  DOM.qrImage.src = ''; 
 });
 
-/* ===== رسم القائمة (احترافي وآمن) ===== */
+/* ===== رسم القائمة وتحديث الإحصائيات ===== */
 function renderOrders() {
   const list = Object.values(orders).sort((a, b) => b.createdAt - a.createdAt);
+
+  // تحديث الإحصائيات
+  DOM.statTotal.textContent = list.length;
+  DOM.statWaiting.textContent = list.filter(o => o.status === 'waiting' || o.status === 'preparing').length;
+  DOM.statReady.textContent = list.filter(o => o.status === 'ready').length;
 
   if (list.length === 0) {
     DOM.ordersList.innerHTML = '<p class="empty">لا توجد طلبات حالياً</p>';
@@ -114,7 +114,6 @@ function renderOrders() {
     const card = document.createElement('div');
     card.className = `order-card ${order.status}`;
 
-    // بناء العناصر برمجياً (أكثر أماناً)
     const infoDiv = document.createElement('div');
     infoDiv.className = 'order-info';
     
@@ -140,22 +139,13 @@ function renderOrders() {
     };
 
     if (order.status === 'waiting') {
-      actionsDiv.appendChild(createBtn('تحضير', 'btn-prepare', () => 
-        updateStatus(order.id, 'preparing')
-      ));
+      actionsDiv.appendChild(createBtn('تحضير', 'btn-prepare', () => updateStatus(order.id, 'preparing')));
     }
     if (order.status !== 'ready') {
-      actionsDiv.appendChild(createBtn('جاهز', 'btn-ready', () => 
-        updateStatus(order.id, 'ready')
-      ));
+      actionsDiv.appendChild(createBtn('جاهز', 'btn-ready', () => updateStatus(order.id, 'ready')));
     }
     
     actionsDiv.appendChild(createBtn('QR', 'btn-qr', () => {
-      socket.emit('create-order', { number: order.number }, (res) => {
-        // لإعادة عرض الـ QR، نطلب من الخادم إنشاءه مجدداً (لأننا لا نحتفظ بالصورة للكاشير)
-        // في الإصدارات القادمة يمكن تحسين هذا
-      });
-      // حل مؤقت سريع: نعرض الـ QR من الذاكرة إن وجد
       if (order.qrDataUrl) showQrModal(order);
     }));
 
