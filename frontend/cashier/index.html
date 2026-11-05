@@ -3,50 +3,92 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bipli — لوحة الكاشير</title>
+  <title>Bipli | لوحة التحكم</title>
+  <!-- استدعاء خط Cairo الاحترافي -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
   <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-  <header>
+  <header class="topbar">
     <div class="brand">
-      <span class="logo">🛎️</span>
+      <div class="logo-icon">🛎️</div>
       <h1>Bipli</h1>
     </div>
-    <span id="status" class="status offline">جاري الاتصال...</span>
+    <div class="connection-status">
+      <span id="status" class="status offline">جاري الاتصال...</span>
+    </div>
   </header>
 
-  <main>
-    <section class="card create-section">
-      <h2>إنشاء طلب جديد</h2>
-      <form id="create-form">
-        <input type="text" id="order-number" placeholder="مثال: 42 أو A-15" required autocomplete="off" />
-        <button type="submit" id="submit-btn">إنشاء QR</button>
-      </form>
+  <main class="dashboard">
+    <!-- شريط الإحصائيات الاحترافي -->
+    <section class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-title">إجمالي الطلبات</span>
+        <span class="stat-value" id="stat-total">0</span>
+      </div>
+      <div class="stat-card warning">
+        <span class="stat-title">قيد الانتظار</span>
+        <span class="stat-value" id="stat-waiting">0</span>
+      </div>
+      <div class="stat-card success">
+        <span class="stat-title">جاهز للاستلام</span>
+        <span class="stat-value" id="stat-ready">0</span>
+      </div>
     </section>
 
-    <section class="card qr-section" id="qr-section" hidden>
-      <h2>امسح الكود لمتابعة الطلب</h2>
-      <div class="qr-container">
-        <!-- نستخدم img بدلاً من canvas لأن الخادم هو من يولد الصورة -->
-        <img id="qr-image" src="" alt="QR Code" width="260" height="260" />
-        <div class="qr-info">
-          <p>رقم الطلب: <strong id="qr-order-number"></strong></p>
-          <p class="hint">اطلب من العميل مسح الكود بكاميرا الهاتف</p>
+    <div class="layout-grid">
+      <!-- قسم إنشاء الطلب -->
+      <section class="card action-card">
+        <div class="card-header">
+          <h2>إنشاء طلب جديد</h2>
+          <p>أدخل رقم الطلب لتوليد رمز الـ QR</p>
         </div>
-      </div>
-      <button id="close-qr" class="btn-secondary">إغلاق</button>
-    </section>
+        <form id="create-form" class="modern-form">
+          <div class="input-group">
+            <input type="text" id="order-number" placeholder="مثال: 42 أو A-15" required autocomplete="off" />
+            <button type="submit" id="submit-btn">
+              <span>توليد الـ QR</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+        </form>
+      </section>
 
-    <section class="card orders-section">
-      <h2>الطلبات النشطة</h2>
-      <div id="orders-list" class="orders-list">
-        <p class="empty">لا توجد طلبات حالياً</p>
-      </div>
-    </section>
+      <!-- قسم الطلبات النشطة -->
+      <section class="card orders-section">
+        <div class="card-header">
+          <h2>الطلبات النشطة</h2>
+        </div>
+        <div id="orders-list" class="orders-list">
+          <p class="empty">لا توجد طلبات حالياً</p>
+        </div>
+      </section>
+    </div>
   </main>
 
-  <!-- حاوية الإشعارات المنبثقة -->
+  <!-- نافذة الـ QR الاحترافية -->
+  <div class="modal-overlay" id="qr-section" hidden>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>امسح الكود لمتابعة الطلب</h2>
+        <button id="close-qr" class="close-btn">&times;</button>
+      </div>
+      <div class="qr-container">
+        <div class="qr-wrapper">
+          <img id="qr-image" src="" alt="QR Code" />
+        </div>
+        <div class="qr-info">
+          <span class="label">رقم الطلب</span>
+          <strong id="qr-order-number" class="highlight-text"></strong>
+          <p class="hint">وجه العميل لمسح الكود بكاميرا هاتفه</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="toast-container" class="toast-container"></div>
 
   <script src="app.js"></script>
