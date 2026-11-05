@@ -4,11 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bipli | لوحة التحكم</title>
-  <!-- استدعاء خط Cairo الاحترافي -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
+  <!-- المكتبة التي سترسم الكود داخل الهاتف -->
+  <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
@@ -23,7 +24,6 @@
   </header>
 
   <main class="dashboard">
-    <!-- شريط الإحصائيات الاحترافي -->
     <section class="stats-grid">
       <div class="stat-card">
         <span class="stat-title">إجمالي الطلبات</span>
@@ -40,7 +40,6 @@
     </section>
 
     <div class="layout-grid">
-      <!-- قسم إنشاء الطلب -->
       <section class="card action-card">
         <div class="card-header">
           <h2>إنشاء طلب جديد</h2>
@@ -57,7 +56,6 @@
         </form>
       </section>
 
-      <!-- قسم الطلبات النشطة -->
       <section class="card orders-section">
         <div class="card-header">
           <h2>الطلبات النشطة</h2>
@@ -69,7 +67,6 @@
     </div>
   </main>
 
-  <!-- نافذة الـ QR الاحترافية -->
   <div class="modal-overlay" id="qr-section" hidden>
     <div class="modal-content">
       <div class="modal-header">
@@ -78,7 +75,8 @@
       </div>
       <div class="qr-container">
         <div class="qr-wrapper">
-          <img id="qr-image" src="" alt="QR Code" />
+          <!-- استخدمنا canvas بدلاً من img -->
+          <canvas id="qr-canvas"></canvas>
         </div>
         <div class="qr-info">
           <span class="label">رقم الطلب</span>
