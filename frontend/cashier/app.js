@@ -79,22 +79,32 @@ DOM.form.addEventListener('submit', (e) => {
 });
 
 function showQrModal(order) {
-  if (!order || !order.customerUrl) return;
+  if (!order) return;
+  
+  // بناء الرابط ديناميكياً (حتى لو كان الطلب قديماً)
+  const url = order.customerUrl || (window.location.origin + '/customer/?id=' + order.id);
   
   DOM.qrOrderNumber.textContent = order.number;
   DOM.qrSection.hidden = false;
 
-  // 👇 رسم الكود داخل المتصفح مباشرة
+  // مسح الكانفاس القديم
+  const ctx = DOM.qrCanvas.getContext('2d');
+  ctx.clearRect(0, 0, DOM.qrCanvas.width, DOM.qrCanvas.height);
+
+  // رسم الكود
   if (typeof QRCode !== 'undefined') {
-    QRCode.toCanvas(DOM.qrCanvas, order.customerUrl, {
+    QRCode.toCanvas(DOM.qrCanvas, url, {
       width: 220,
       margin: 2,
       color: { dark: '#0f172a', light: '#ffffff' }
     }, function (error) {
-      if (error) console.error('QR Error:', error);
+      if (error) {
+        console.error('QR Error:', error);
+        alert('حدث خطأ في رسم الكود: ' + error.message);
+      }
     });
   } else {
-    showToast('مكتبة الـ QR لم يتم تحميلها بعد، جرب تحديث الصفحة', 'error');
+    alert('مكتبة الـ QR لم يتم تحميلها، يرجى التأكد من اتصالك بالإنترنت وتحديث الصفحة.');
   }
 }
 
@@ -127,7 +137,7 @@ function renderOrders() {
     numSpan.className = 'order-number';
     numSpan.textContent = `#${order.number}`;
     
-    const statusSpan = document.createElement ('span');
+    const statusSpan = document.createElement('span');
     statusSpan.className = 'order-status';
     statusSpan.textContent = statusLabel(order.status);
     
