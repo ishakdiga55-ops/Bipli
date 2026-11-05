@@ -3,6 +3,7 @@ const http = require('http');
 const path = require('path');
 const cors = require('cors');
 const { Server } = require('socket.io');
+const QRCode = require('qrcode');
 
 const app = express();
 const server = http.createServer(app);
@@ -28,7 +29,7 @@ io.on('connection', (socket) => {
     socket.emit('orders-snapshot', Array.from(orders.values()));
   });
 
-  socket.on('create-order', ({ number }, callback) => {
+  socket.on('create-order', async ({ number }, callback) => {
     try {
       const num = (number || '').toString().trim();
       if (!num) throw new Error('رقم الطلب مطلوب');
@@ -37,8 +38,11 @@ io.on('connection', (socket) => {
       const origin = 'https://bipli-1.onrender.com'; 
       const customerUrl = `${origin}/customer/?id=${id}`;
       
+      // 👇 رسم الصورة هنا في الخادم وتحويلها لنص Base64
+      const qrDataUrl = await QRCode.toDataURL(customerUrl, { width: 300, margin: 2 });
+
       const order = {
-        id, number: num, status: 'waiting', createdAt: Date.now(), readyAt: null, customerUrl
+        id, number: num, status: 'waiting', createdAt: Date.now(), readyAt: null, customerUrl, qrDataUrl
       };
 
       orders.set(id, order);
