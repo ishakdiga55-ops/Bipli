@@ -79,16 +79,18 @@ DOM.form.addEventListener('submit', (e) => {
 });
 
 function showQrModal(order) {
-  if (!order) return;
+  if (!order || !order.customerUrl) return;
   DOM.qrOrderNumber.textContent = order.number;
-  // 👇 استخدام الرابط الجديد للصورة (يتم إضافة الوقت لمنع التعليق)
-  DOM.qrImage.src = `/api/qr/${order.id}?t=${Date.now()}`; 
+  
+  // 👇 السر هنا: نستخدم API خارجي موثوق جداً لرسم الـ QR (لا يحتاج خادمنا ولا يتعرض للتعليق)
+  const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(order.customerUrl)}`;
+  DOM.qrImage.src = qrApiUrl;
+  
   DOM.qrSection.hidden = false;
 }
 
 DOM.closeQrBtn.addEventListener('click', () => {
   DOM.qrSection.hidden = true;
-  DOM.qrImage.src = '';
 });
 
 function renderOrders() {
@@ -140,10 +142,7 @@ function renderOrders() {
       actionsDiv.appendChild(createBtn('جاهز', 'btn-ready', () => updateStatus(order.id, 'ready')));
     }
     
-    // زر الـ QR سيعمل الآن دائماً بدون أي تعليق
-    actionsDiv.appendChild(createBtn('QR', 'btn-qr', () => {
-      showQrModal(order);
-    }));
+    actionsDiv.appendChild(createBtn('QR', 'btn-qr', () => showQrModal(order)));
 
     if (order.status === 'ready') {
       actionsDiv.appendChild(createBtn('حذف', 'btn-delete', () => {
