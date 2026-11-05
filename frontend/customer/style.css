@@ -116,8 +116,8 @@ body {
   80%      { transform: translateX(5px); }
 }
 
-.btn-enable, .btn-stop {
-  margin-top: 22px;
+.btn-stop {
+  margin-top: 16px;
   padding: 13px 26px;
   border: none;
   border-radius: 14px;
@@ -125,26 +125,13 @@ body {
   font-weight: 700;
   cursor: pointer;
   font-family: inherit;
-  transition: transform 0.12s, opacity 0.2s;
-}
-.btn-enable {
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-  color: white;
-  animation: bounce 1.6s ease-in-out infinite;
-}
-.btn-stop {
   background: #22c55e;
   color: white;
   display: block;
   width: 100%;
-  margin-top: 16px;
+  transition: transform 0.12s;
 }
-.btn-enable:active, .btn-stop:active { transform: scale(0.96); }
-
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-5px); }
-}
+.btn-stop:active { transform: scale(0.96); }
 
 .hint {
   margin-top: 18px;
@@ -171,3 +158,59 @@ body {
   font-size: 14px;
   line-height: 1.7;
 }
+
+/* ===== نافذة تفعيل الصوت (Overlay) ===== */
+.overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 23, 42, 0.9);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 20px;
+  transition: opacity 0.3s ease;
+}
+.overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+.overlay-content {
+  background: #1e293b;
+  padding: 30px 24px;
+  border-radius: 24px;
+  text-align: center;
+  max-width: 340px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
+.overlay-content .icon {
+  font-size: 50px;
+  margin-bottom: 15px;
+  animation: bounce 2s infinite;
+}
+.overlay-content h2 {
+  color: white;
+  margin-bottom: 12px;
+  font-size: 20px;
+}
+.overlay-content p {
+  color: #94a3b8;
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+.btn-enable {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  color: white;
+  border: none;
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  width: 100%;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btn-enable:active { transform: scale(0.97); }
