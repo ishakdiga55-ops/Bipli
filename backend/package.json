@@ -1,6 +1,6 @@
 {
   "name": "bipli-backend",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "خادم Bipli اللحظي للطلبات والنداء",
   "main": "server.js",
   "scripts": {
@@ -13,7 +13,9 @@
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.18.2",
-    "socket.io": "^4.7.4"
+    "socket.io": "^4.7.4",
+    "qrcode": "^1.5.3",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
