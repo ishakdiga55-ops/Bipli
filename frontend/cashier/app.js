@@ -47,7 +47,6 @@ socket.on('order-created', (order) => {
 });
 
 socket.on('order-updated', (order) => {
-  // الحفاظ على الصورة إذا كانت موجودة في الذاكرة
   if (orders[order.id] && orders[order.id].qrDataUrl && !order.qrDataUrl) {
     order.qrDataUrl = orders[order.id].qrDataUrl;
   }
@@ -66,11 +65,11 @@ DOM.form.addEventListener('submit', (e) => {
   if (!number) return;
 
   DOM.submitBtn.disabled = true;
-  DOM.submitBtn.innerHTML = '<span>جاري الإنشاء...</span>';
+  DOM.submitBtn.innerHTML = 'جاري الإنشاء...';
 
   socket.emit('create-order', { number }, (res) => {
     DOM.submitBtn.disabled = false;
-    DOM.submitBtn.innerHTML = '<span>توليد الـ QR</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
+    DOM.submitBtn.innerHTML = 'توليد الـ QR';
 
     if (res && res.ok) {
       DOM.input.value = '';
@@ -146,11 +145,7 @@ function renderOrders() {
     }
     
     actionsDiv.appendChild(createBtn('QR', 'btn-qr', () => {
-      if (order.qrDataUrl) {
-        showQrModal(order);
-      } else {
-        showToast('الصورة غير متوفرة لهذا الطلب', 'error');
-      }
+      if (order.qrDataUrl) showQrModal(order);
     }));
 
     if (order.status === 'ready') {
