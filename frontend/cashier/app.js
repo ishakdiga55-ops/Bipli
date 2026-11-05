@@ -5,7 +5,7 @@ const DOM = {
   input: document.getElementById('order-number'),
   submitBtn: document.getElementById('submit-btn'),
   qrSection: document.getElementById('qr-section'),
-  qrImage: document.getElementById('qr-image'),
+  qrCanvas: document.getElementById('qr-canvas'),
   qrOrderNumber: document.getElementById('qr-order-number'),
   closeQrBtn: document.getElementById('close-qr'),
   ordersList: document.getElementById('orders-list'),
@@ -66,7 +66,7 @@ DOM.form.addEventListener('submit', (e) => {
 
   socket.emit('create-order', { number }, (res) => {
     DOM.submitBtn.disabled = false;
-    DOM.submitBtn.innerHTML = 'توليد الـ QR';
+    DOM.submitBtn.innerHTML = '<span>توليد الـ QR</span>';
 
     if (res && res.ok) {
       DOM.input.value = '';
@@ -80,13 +80,22 @@ DOM.form.addEventListener('submit', (e) => {
 
 function showQrModal(order) {
   if (!order || !order.customerUrl) return;
+  
   DOM.qrOrderNumber.textContent = order.number;
-  
-  // 👇 السر هنا: نستخدم API خارجي موثوق جداً لرسم الـ QR (لا يحتاج خادمنا ولا يتعرض للتعليق)
-  const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(order.customerUrl)}`;
-  DOM.qrImage.src = qrApiUrl;
-  
   DOM.qrSection.hidden = false;
+
+  // 👇 رسم الكود داخل المتصفح مباشرة
+  if (typeof QRCode !== 'undefined') {
+    QRCode.toCanvas(DOM.qrCanvas, order.customerUrl, {
+      width: 220,
+      margin: 2,
+      color: { dark: '#0f172a', light: '#ffffff' }
+    }, function (error) {
+      if (error) console.error('QR Error:', error);
+    });
+  } else {
+    showToast('مكتبة الـ QR لم يتم تحميلها بعد، جرب تحديث الصفحة', 'error');
+  }
 }
 
 DOM.closeQrBtn.addEventListener('click', () => {
@@ -118,7 +127,7 @@ function renderOrders() {
     numSpan.className = 'order-number';
     numSpan.textContent = `#${order.number}`;
     
-    const statusSpan = document.createElement('span');
+    const statusSpan = document.createElement ('span');
     statusSpan.className = 'order-status';
     statusSpan.textContent = statusLabel(order.status);
     
