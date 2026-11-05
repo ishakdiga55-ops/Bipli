@@ -1,121 +1,128 @@
-/**
- * Bipli — خادم الطلبات اللحظي
- * Node.js + Express + Socket.io
- */
 const express = require('express');
 const http = require('http');
 const path = require('path');
 const cors = require('cors');
 const { Server } = require('socket.io');
+const QRCode = require('qrcode');
+const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
+const io = new Server(server, { 
+  cors: { origin: '*', methods: ['GET', 'POST'] },
+  pingTimeout: 60000 // إبقاء الاتصال نشطاً
+});
 
 app.use(cors());
 app.use(express.json());
 
-// خدمة الملفات الثابتة من frontend
 const frontendPath = path.join(__dirname, '..', 'frontend');
 app.use(express.static(frontendPath));
 
-// توجيه الصفحة الرئيسية إلى واجهة الكاشير تلقائياً
-app.get('/', (req, res) => {
-  res.redirect('/cashier/');
-});
+app.get('/', (req, res) => res.redirect('/cashier/'));
 
-// ===== المخزن (in-memory) =====
-// orders: Map<id, { id, number, status, createdAt, readyAt }>
+// ===== المخزن =====
 const orders = new Map();
 
-function generateId() {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
-}
-
-// REST احتياطي
-app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, name: 'Bipli', orders: orders.size });
-});
-
+// API احترافي لجلب الطلب
 app.get('/api/orders/:id', (req, res) => {
   const order = orders.get(req.params.id);
-  if (!order) return res.status(404).json({ error: 'Not found' });
-  res.json(order);
+  if (!order) return res.status(404).json({ success: false, error: 'Order not found' });
+  res.json({ success: true, data: order });
 });
 
-// ===== Socket.io =====
 io.on('connection', (socket) => {
-  console.log('🟢 اتصال:', socket.id);
+  console.log(`[SOCKET] Connected: ${socket.id}`);
 
   // ===== الكاشير =====
   socket.on('join-cashier', () => {
-    socket.join('cashier');
+    socket.join('cashier-room');
     socket.emit('orders-snapshot', Array.from(orders.values()));
   });
 
-  socket.on('create-order', ({ number }, cb) => {
-    const num = (number || '').toString().trim();
-    if (!num) return cb && cb({ ok: false, error: 'رقم الطلب مطلوب' });
+  // إنشاء طلب مع توليد QR في الخادم (احترافي)
+  socket.on('create-order', async ({ number }, callback) => {
+    try {
+      const num = (number || '').toString().trim();
+      if (!num) throw new Error('رقم الطلب مطلوب');
 
-    const id = generateId();
-    const order = {
-      id,
-      number: num,
-      status: 'waiting',
-      createdAt: Date.now(),
-      readyAt: null,
-    };
-    orders.set(id, order);
-    io.to('cashier').emit('order-created', order);
-    cb && cb({ ok: true, order });
+      const id = uuidv4();
+      const origin = process.env.NODE_ENV === 'production' 
+        ? 'https://bipli-1.onrender.com' // ضع رابطك هنا
+        : 'http://localhost:3000';
+      
+      const customerUrl = `${origin}/customer/?id=${id}`;
+      
+      // توليد صورة الـ QR كـ Base64
+      const qrDataUrl = await QRCode.toDataURL(customerUrl, { 
+        width: 300, 
+        margin: 2,
+        color: { dark: '#0f172a', light: '#ffffff' }
+      });
+
+      const order = {
+        id,
+        number: num,
+        status: 'waiting',
+        createdAt: Date.now(),
+        readyAt: null,
+        qrDataUrl, // نحفظ الصورة الجاهزة
+        customerUrl
+      };
+
+      orders.set(id, order);
+      
+      // إرسال للكاشير فقط (بدون الصورة لتخفيف البيانات)
+      const { qrDataUrl: _, customerUrl: __, ...orderForCashier } = order;
+      io.to('cashier-room').emit('order-created', orderForCashier);
+      
+      callback({ ok: true, order }); // نرسل الطلب كاملاً (مع الصورة) للذي أنشأه فقط
+    } catch (error) {
+      console.error('[ERROR] create-order:', error.message);
+      callback({ ok: false, error: error.message });
+    }
   });
 
-  socket.on('mark-preparing', ({ id }, cb) => {
+  socket.on('update-status', ({ id, status }, callback) => {
     const order = orders.get(id);
-    if (!order) return cb && cb({ ok: false });
-    order.status = 'preparing';
-    io.to(`order:${id}`).emit('order-updated', order);
-    io.to('cashier').emit('order-updated', order);
-    cb && cb({ ok: true, order });
+    if (!order) return callback && callback({ ok: false });
+    
+    order.status = status;
+    if (status === 'ready') order.readyAt = Date.now();
+    
+    const { qrDataUrl, customerUrl, ...orderData } = order;
+    
+    // إبلاغ العميل
+    io.to(`order-${id}`).emit(status === 'ready' ? 'order-ready' : 'order-updated', orderData);
+    // إبلاغ الكاشير
+    io.to('cashier-room').emit('order-updated', orderData);
+    
+    callback && callback({ ok: true });
   });
 
-  socket.on('mark-ready', ({ id }, cb) => {
-    const order = orders.get(id);
-    if (!order) return cb && cb({ ok: false });
-    order.status = 'ready';
-    order.readyAt = Date.now();
-    io.to(`order:${id}`).emit('order-ready', order);
-    io.to('cashier').emit('order-updated', order);
-    cb && cb({ ok: true, order });
-  });
-
-  socket.on('delete-order', ({ id }, cb) => {
-    if (!orders.has(id)) return cb && cb({ ok: false });
-    orders.delete(id);
-    io.to('cashier').emit('order-deleted', { id });
-    cb && cb({ ok: true });
+  socket.on('delete-order', ({ id }) => {
+    if (orders.has(id)) {
+      orders.delete(id);
+      io.to('cashier-room').emit('order-deleted', { id });
+    }
   });
 
   // ===== العميل =====
-  socket.on('join-order', ({ id }, cb) => {
+  socket.on('join-order', ({ id }, callback) => {
     const order = orders.get(id);
-    if (!order) return cb && cb({ ok: false });
-    socket.join(`order:${id}`);
-    socket.emit('order-snapshot', order);
-    cb && cb({ ok: true, order });
+    if (!order) return callback && callback({ ok: false });
+    
+    socket.join(`order-${id}`);
+    const { qrDataUrl, customerUrl, ...orderData } = order;
+    callback({ ok: true, order: orderData });
   });
 
   socket.on('disconnect', () => {
-    console.log('🔴 قطع:', socket.id);
+    console.log(`[SOCKET] Disconnected: ${socket.id}`);
   });
 });
 
-// ===== التشغيل =====
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log('=====================================');
-  console.log(`🚀 Bipli يعمل على: http://localhost:${PORT}`);
-  console.log(`👨‍💼 الكاشير:  http://localhost:${PORT}/cashier/`);
-  console.log(`👤 العميل:   http://localhost:${PORT}/customer/`);
-  console.log('=====================================');
+  console.log(`🚀 Server running on port ${PORT}`);
 });
