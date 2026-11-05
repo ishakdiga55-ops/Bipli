@@ -1,18 +1,21 @@
 /**
- * Bipli — منطق واجهة العميل
+ * Bipli — منطق واجهة العميل (احترافي)
  */
 const params  = new URLSearchParams(location.search);
 const orderId = params.get('id');
 
-const cardEl        = document.getElementById('card');
-const orderNumberEl = document.getElementById('order-number');
-const statusBadge   = document.getElementById('status-badge');
-const messageEl     = document.getElementById('message');
-const enableBtn     = document.getElementById('enable-sound');
-const stopBtn       = document.getElementById('stop-btn');
-const hintEl        = document.getElementById('hint');
-const ringtone      = document.getElementById('ringtone');
-const errorEl       = document.getElementById('error-msg');
+const DOM = {
+  card: document.getElementById('card'),
+  orderNumber: document.getElementById('order-number'),
+  statusBadge: document.getElementById('status-badge'),
+  message: document.getElementById('message'),
+  stopBtn: document.getElementById('stop-btn'),
+  hint: document.getElementById('hint'),
+  ringtone: document.getElementById('ringtone'),
+  error: document.getElementById('error-msg'),
+  overlay: document.getElementById('audio-overlay'),
+  enableAudioBtn: document.getElementById('enable-audio-btn')
+};
 
 let soundEnabled = false;
 let isReady      = false;
@@ -21,6 +24,29 @@ let beepCtx      = null;
 
 if (!orderId) showError('رابط غير صالح — رقم الطلب مفقود.');
 
+/* ===== 1. تفعيل الصوت (Overlay) ===== */
+DOM.enableAudioBtn.addEventListener('click', async () => {
+  soundEnabled = true;
+  DOM.overlay.classList.add('hidden'); // إخفاء النافذة
+
+  // محاولة تشغيل الصوت لكسر حظر المتصفح
+  try {
+    DOM.ringtone.volume = 0.01;
+    await DOM.ringtone.play();
+    DOM.ringtone.pause();
+    DOM.ringtone.currentTime = 0;
+    DOM.ringtone.volume = 1;
+  } catch (e) {
+    console.warn('Audio unlock failed, using fallback');
+  }
+
+  // طلب إذن الإشعارات
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+});
+
+/* ===== 2. الاتصال بالخادم ===== */
 const socket = io();
 
 socket.on('connect', () => {
@@ -47,35 +73,33 @@ socket.on('order-ready', (order) => {
   triggerReady();
 });
 
+/* ===== 3. تحديث الواجهة ===== */
 function applyOrder(order) {
   if (!order) return;
-  orderNumberEl.textContent = '#' + order.number;
+  DOM.orderNumber.textContent = '#' + order.number;
   setStatus(order.status);
 }
 
 function setStatus(status) {
-  statusBadge.className = 'status-badge ' + status;
-  const labels = {
-    waiting:   'قيد الانتظار',
-    preparing: 'قيد التحضير',
-    ready:     'جاهز! ✓',
-  };
-  statusBadge.textContent = labels[status] || status;
+  DOM.statusBadge.className = 'status-badge ' + status;
+  const labels = { waiting: 'قيد الانتظار', preparing: 'قيد التحضير', ready: 'جاهز! ✓' };
+  DOM.statusBadge.textContent = labels[status] || status;
 
   if (status === 'waiting') {
-    messageEl.textContent = 'يرجى الانتظار، سنقوم بإشعارك عند تجهيز طلبك.';
-    cardEl.classList.remove('is-ready', 'is-preparing');
+    DOM.message.textContent = 'يرجى الانتظار، سنقوم بإشعارك عند تجهيز طلبك.';
+    DOM.card.classList.remove('is-ready', 'is-preparing');
   } else if (status === 'preparing') {
-    messageEl.textContent = 'طلبك قيد التحضير الآن…';
-    cardEl.classList.remove('is-ready');
-    cardEl.classList.add('is-preparing');
+    DOM.message.textContent = 'طلبك قيد التحضير الآن…';
+    DOM.card.classList.remove('is-ready');
+    DOM.card.classList.add('is-preparing');
   } else if (status === 'ready') {
-    messageEl.textContent = 'طلبك جاهز! يرجى التوجه إلى الكاشير.';
-    cardEl.classList.add('is-ready');
-    cardEl.classList.remove('is-preparing');
+    DOM.message.textContent = 'طلبك جاهز! يرجى التوجه إلى الكاشير.';
+    DOM.card.classList.add('is-ready');
+    DOM.card.classList.remove('is-preparing');
   }
 }
 
+/* ===== 4. التنبيه عند الجاهزية ===== */
 function triggerReady() {
   if (isReady) return;
   isReady = true;
@@ -85,20 +109,18 @@ function triggerReady() {
   if (soundEnabled) {
     playRingtone().catch(() => startBeepFallback());
   } else {
-    enableBtn.hidden = false;
-    enableBtn.textContent = '🔔 اضغط لتشغيل التنبيه';
-    hintEl.textContent = 'طلبك جاهز — اضغط لتفعيل الصوت';
+    // إذا لم يضغط على الزر (حالة نادرة)
+    DOM.overlay.classList.remove('hidden');
+    DOM.enableAudioBtn.textContent = '🔔 اضغط لتشغيل التنبيه';
   }
 
   showNotification();
-  stopBtn.hidden = false;
+  DOM.stopBtn.hidden = false;
 }
 
 async function playRingtone() {
-  ringtone.currentTime = 0;
-  await ringtone.play();
-  soundEnabled = true;
-  enableBtn.hidden = true;
+  DOM.ringtone.currentTime = 0;
+  await DOM.ringtone.play();
 }
 
 function startBeepFallback() {
@@ -127,8 +149,8 @@ function startBeepFallback() {
 }
 
 function stopAll() {
-  ringtone.pause();
-  ringtone.currentTime = 0;
+  DOM.ringtone.pause();
+  DOM.ringtone.currentTime = 0;
   if (beepTimer) { clearInterval(beepTimer); beepTimer = null; }
   if (navigator.vibrate) navigator.vibrate(0);
 }
@@ -138,7 +160,7 @@ function showNotification() {
   if (Notification.permission !== 'granted') return;
   try {
     new Notification('Bipli — طلبك جاهز! 🎉', {
-      body: `الطلب ${orderNumberEl.textContent} جاهز للاستلام`,
+      body: `الطلب ${DOM.orderNumber.textContent} جاهز للاستلام`,
       tag: 'order-ready',
       requireInteraction: true,
       vibrate: [400, 200, 400],
@@ -146,56 +168,21 @@ function showNotification() {
   } catch (_) {}
 }
 
-function unlockAudio() {
-  if (soundEnabled) return;
-  soundEnabled = true;
-
-  ringtone.volume = 0;
-  const p = ringtone.play();
-  if (p && p.then) {
-    p.then(() => {
-      ringtone.pause();
-      ringtone.currentTime = 0;
-      ringtone.volume = 1;
-    }).catch(() => {
-      ringtone.volume = 1;
-    });
-  } else {
-    ringtone.volume = 1;
-  }
-
-  enableBtn.hidden = true;
-
-  if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
-  }
-}
-
-document.addEventListener('touchstart', unlockAudio, { once: true, passive: true });
-document.addEventListener('click',      unlockAudio, { once: true });
-
-enableBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
-  unlockAudio();
-  if (isReady) playRingtone().catch(() => startBeepFallback());
-});
-
-stopBtn.addEventListener('click', (e) => {
+DOM.stopBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   stopAll();
-  stopBtn.hidden = true;
-  messageEl.textContent = 'شكراً لك! نتمنى لك يوماً سعيداً.';
-  cardEl.classList.remove('is-ready');
+  DOM.stopBtn.hidden = true;
+  DOM.message.textContent = 'شكراً لك! نتمنى لك يوماً سعيداً.';
+  DOM.card.classList.remove('is-ready');
 });
 
 function showError(msg) {
-  errorEl.textContent = msg;
-  errorEl.hidden = false;
-  cardEl.hidden = true;
+  DOM.error.textContent = msg;
+  DOM.error.hidden = false;
+  DOM.card.hidden = true;
+  DOM.overlay.classList.add('hidden');
 }
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch((e) =>
-    console.warn('SW register failed:', e)
-  );
+  navigator.serviceWorker.register('sw.js').catch((e) => console.warn('SW register failed:', e));
 }
