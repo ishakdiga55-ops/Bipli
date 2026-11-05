@@ -8,6 +8,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
+  
+  <!-- مكتبة رسم الكود داخل المتصفح -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  
   <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
@@ -64,6 +68,7 @@
     </div>
   </main>
 
+  <!-- نافذة عرض الـ QR -->
   <div class="modal-overlay" id="qr-section" hidden>
     <div class="modal-content">
       <div class="modal-header">
@@ -72,7 +77,8 @@
       </div>
       <div class="qr-container">
         <div class="qr-wrapper">
-          <img id="qr-image" src="" alt="QR Code" style="width: 220px; height: 220px; display: block;" />
+          <!-- حاوية الكود (فارغة، سيتم رسم الكود بداخلها) -->
+          <div id="qrcode" style="width: 220px; height: 220px; background: white; padding: 10px; border-radius: 10px;"></div>
         </div>
         <div class="qr-info">
           <span class="label">رقم الطلب</span>
@@ -84,6 +90,8 @@
   </div>
 
   <div id="toast-container" class="toast-container"></div>
-  <script src="app.js"></script>
+
+  <!-- استدعاء الملف الجديد -->
+  <script src="app_v2.js"></script>
 </body>
 </html>
