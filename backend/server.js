@@ -3,7 +3,6 @@ const http = require('http');
 const path = require('path');
 const cors = require('cors');
 const { Server } = require('socket.io');
-const QRCode = require('qrcode');
 const { v4: uuidv4 } = require('uuid');
 
 const app = express();
@@ -20,21 +19,6 @@ app.get('/', (req, res) => res.redirect('/cashier/'));
 
 const orders = new Map();
 
-// 👇 الرابط الجديد الذي يولد صورة الـ QR مباشرة (احترافي جداً)
-app.get('/api/qr/:id', async (req, res) => {
-  const order = orders.get(req.params.id);
-  if (!order) return res.status(404).send('Not found');
-  try {
-    // توليد الصورة كملف بياني وليس كنص
-    const qrBuffer = await QRCode.toBuffer(order.customerUrl, { width: 300, margin: 2 });
-    res.setHeader('Content-Type', 'image/png');
-    res.setHeader('Cache-Control', 'no-store'); // منع الاحتفاظ بالصورة القديمة
-    res.send(qrBuffer);
-  } catch (err) {
-    res.status(500).send('Error generating QR');
-  }
-});
-
 io.on('connection', (socket) => {
   socket.on('join-cashier', () => {
     socket.join('cashier-room');
@@ -47,17 +31,14 @@ io.on('connection', (socket) => {
       if (!num) throw new Error('رقم الطلب مطلوب');
 
       const id = uuidv4();
-      // تثبيت رابط السيرفر لضمان عمل الكود على الهاتف
       const origin = 'https://bipli-1.onrender.com'; 
       const customerUrl = `${origin}/customer/?id=${id}`;
       
       const order = {
-        id, number: num, status: 'waiting', createdAt: Date.now(), readyAt: null,
-        customerUrl 
+        id, number: num, status: 'waiting', createdAt: Date.now(), readyAt: null, customerUrl
       };
 
       orders.set(id, order);
-      
       io.to('cashier-room').emit('order-created', order);
       if (callback) callback({ ok: true, order });
     } catch (error) {
@@ -68,13 +49,10 @@ io.on('connection', (socket) => {
   socket.on('update-status', ({ id, status }, callback) => {
     const order = orders.get(id);
     if (!order) return callback && callback({ ok: false });
-    
     order.status = status;
     if (status === 'ready') order.readyAt = Date.now();
-    
     io.to(`order-${id}`).emit(status === 'ready' ? 'order-ready' : 'order-updated', order);
     io.to('cashier-room').emit('order-updated', order);
-    
     if (callback) callback({ ok: true });
   });
 
