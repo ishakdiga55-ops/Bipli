@@ -47,9 +47,6 @@ socket.on('order-created', (order) => {
 });
 
 socket.on('order-updated', (order) => {
-  if (orders[order.id] && orders[order.id].qrDataUrl && !order.qrDataUrl) {
-    order.qrDataUrl = orders[order.id].qrDataUrl;
-  }
   orders[order.id] = order;
   renderOrders();
 });
@@ -82,17 +79,16 @@ DOM.form.addEventListener('submit', (e) => {
 });
 
 function showQrModal(order) {
-  if (!order || !order.qrDataUrl) {
-    showToast('تعذر تحميل صورة الـ QR', 'error');
-    return;
-  }
+  if (!order) return;
   DOM.qrOrderNumber.textContent = order.number;
-  DOM.qrImage.src = order.qrDataUrl;
+  // 👇 استخدام الرابط الجديد للصورة (يتم إضافة الوقت لمنع التعليق)
+  DOM.qrImage.src = `/api/qr/${order.id}?t=${Date.now()}`; 
   DOM.qrSection.hidden = false;
 }
 
 DOM.closeQrBtn.addEventListener('click', () => {
   DOM.qrSection.hidden = true;
+  DOM.qrImage.src = '';
 });
 
 function renderOrders() {
@@ -144,8 +140,9 @@ function renderOrders() {
       actionsDiv.appendChild(createBtn('جاهز', 'btn-ready', () => updateStatus(order.id, 'ready')));
     }
     
+    // زر الـ QR سيعمل الآن دائماً بدون أي تعليق
     actionsDiv.appendChild(createBtn('QR', 'btn-qr', () => {
-      if (order.qrDataUrl) showQrModal(order);
+      showQrModal(order);
     }));
 
     if (order.status === 'ready') {
