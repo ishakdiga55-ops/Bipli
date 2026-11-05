@@ -22,9 +22,7 @@
       <div class="status-badge" id="status-badge">جاري التحميل…</div>
       <p class="message" id="message">يرجى الانتظار، سنقوم بإشعارك عند تجهيز طلبك</p>
 
-      <button id="enable-sound" class="btn-enable">تفعيل الصوت والتنبيه</button>
       <button id="stop-btn" class="btn-stop" hidden>تم الاستلام ✓</button>
-
       <p class="hint" id="hint">لا تغلق هذه الصفحة حتى يصبح طلبك جاهزاً</p>
       <p class="brand-footer">Powered by <strong>Bipli</strong></p>
     </div>
@@ -32,6 +30,17 @@
     <div id="error-msg" class="error" hidden></div>
   </main>
 
+  <!-- نافذة تفعيل الصوت -->
+  <div id="audio-overlay" class="overlay">
+    <div class="overlay-content">
+      <div class="icon">🔔</div>
+      <h2>تنبيهات الطلب</h2>
+      <p>اضغط بالأسفل لتفعيل الصوت والاهتزاز. <br>سنقوم بإشعارك فور تجهيز طلبك.</p>
+      <button id="enable-audio-btn" class="btn-enable">تفعيل التنبيهات الآن</button>
+    </div>
+  </div>
+
+  <!-- الصوت المخفي (يُستخدم للتنبيه) -->
   <audio id="ringtone" src="assets/ringtone.mp3" preload="auto" loop></audio>
 
   <script src="app.js"></script>
