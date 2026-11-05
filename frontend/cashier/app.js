@@ -6,7 +6,6 @@ const DOM = {
   submitBtn: document.getElementById('submit-btn'),
   qrSection: document.getElementById('qr-section'),
   qrImage: document.getElementById('qr-image'),
-  qrSpinner: document.getElementById('qr-spinner'),
   qrOrderNumber: document.getElementById('qr-order-number'),
   closeQrBtn: document.getElementById('close-qr'),
   ordersList: document.getElementById('orders-list'),
@@ -80,20 +79,14 @@ DOM.form.addEventListener('submit', (e) => {
 });
 
 function showQrModal(order) {
-  if (!order) return;
+  if (!order || !order.qrDataUrl) {
+    showToast('تعذر تحميل صورة الـ QR', 'error');
+    return;
+  }
   
   DOM.qrOrderNumber.textContent = order.number;
+  DOM.qrImage.src = order.qrDataUrl; // الصورة جاهزة 100%
   DOM.qrSection.hidden = false;
-  
-  // إظهار دائرة التحميل وإخفاء الصورة القديمة
-  DOM.qrSpinner.style.display = 'block';
-  DOM.qrImage.style.display = 'none';
-  
-  // بناء الرابط ديناميكياً
-  const url = order.customerUrl || (window.location.origin + '/customer/?id=' + order.id);
-  
-  // 👇 السر هنا: خادم سريع جداً ومستقر يرسم الكود في أجزاء من الثانية
-  DOM.qrImage.src = `https://quickchart.io/qr?text=${encodeURIComponent(url)}&size=300&margin=2`;
 }
 
 DOM.closeQrBtn.addEventListener('click', () => {
