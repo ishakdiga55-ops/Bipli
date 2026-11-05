@@ -17,7 +17,6 @@ const DOM = {
 
 let orders = {};
 
-/* ===== إدارة الإشعارات (Toasts) ===== */
 function showToast(message, type = 'success') {
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
@@ -26,7 +25,6 @@ function showToast(message, type = 'success') {
   setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
 }
 
-/* ===== الاتصال ===== */
 socket.on('connect', () => {
   DOM.status.textContent = 'متصل';
   DOM.status.className = 'status online';
@@ -38,7 +36,6 @@ socket.on('disconnect', () => {
   DOM.status.className = 'status offline';
 });
 
-/* ===== استقبال البيانات ===== */
 socket.on('orders-snapshot', (list) => {
   orders = Object.fromEntries(list.map(o => [o.id, o]));
   renderOrders();
@@ -50,6 +47,10 @@ socket.on('order-created', (order) => {
 });
 
 socket.on('order-updated', (order) => {
+  // الحفاظ على الصورة إذا كانت موجودة في الذاكرة
+  if (orders[order.id] && orders[order.id].qrDataUrl && !order.qrDataUrl) {
+    order.qrDataUrl = orders[order.id].qrDataUrl;
+  }
   orders[order.id] = order;
   renderOrders();
 });
@@ -59,7 +60,6 @@ socket.on('order-deleted', ({ id }) => {
   renderOrders();
 });
 
-/* ===== إنشاء طلب ===== */
 DOM.form.addEventListener('submit', (e) => {
   e.preventDefault();
   const number = DOM.input.value.trim();
@@ -82,8 +82,11 @@ DOM.form.addEventListener('submit', (e) => {
   });
 });
 
-/* ===== عرض QR ===== */
 function showQrModal(order) {
+  if (!order || !order.qrDataUrl) {
+    showToast('تعذر تحميل صورة الـ QR', 'error');
+    return;
+  }
   DOM.qrOrderNumber.textContent = order.number;
   DOM.qrImage.src = order.qrDataUrl;
   DOM.qrSection.hidden = false;
@@ -91,14 +94,11 @@ function showQrModal(order) {
 
 DOM.closeQrBtn.addEventListener('click', () => {
   DOM.qrSection.hidden = true;
-  DOM.qrImage.src = ''; 
 });
 
-/* ===== رسم القائمة وتحديث الإحصائيات ===== */
 function renderOrders() {
   const list = Object.values(orders).sort((a, b) => b.createdAt - a.createdAt);
 
-  // تحديث الإحصائيات
   DOM.statTotal.textContent = list.length;
   DOM.statWaiting.textContent = list.filter(o => o.status === 'waiting' || o.status === 'preparing').length;
   DOM.statReady.textContent = list.filter(o => o.status === 'ready').length;
@@ -146,7 +146,11 @@ function renderOrders() {
     }
     
     actionsDiv.appendChild(createBtn('QR', 'btn-qr', () => {
-      if (order.qrDataUrl) showQrModal(order);
+      if (order.qrDataUrl) {
+        showQrModal(order);
+      } else {
+        showToast('الصورة غير متوفرة لهذا الطلب', 'error');
+      }
     }));
 
     if (order.status === 'ready') {
