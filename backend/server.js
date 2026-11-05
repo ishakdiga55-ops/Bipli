@@ -46,11 +46,10 @@ io.on('connection', (socket) => {
 
       orders.set(id, order);
       
-      // إرسال الطلب بالصورة للكاشير
       io.to('cashier-room').emit('order-created', order);
-      callback({ ok: true, order });
+      if (callback) callback({ ok: true, order });
     } catch (error) {
-      callback({ ok: false, error: error.message });
+      if (callback) callback({ ok: false, error: error.message });
     }
   });
 
@@ -61,13 +60,12 @@ io.on('connection', (socket) => {
     order.status = status;
     if (status === 'ready') order.readyAt = Date.now();
     
-    // إرسال التحديث بدون الصورة (لتخفيف البيانات أثناء التحديث)
     const { qrDataUrl, customerUrl, ...orderData } = order;
     
     io.to(`order-${id}`).emit(status === 'ready' ? 'order-ready' : 'order-updated', orderData);
-    io.to('cashier-room').emit('order-updated', orderData); // الكاشير سيحدث الحالة فقط ويحتفظ بالصورة في الذاكرة
+    io.to('cashier-room').emit('order-updated', orderData);
     
-    callback && callback({ ok: true });
+    if (callback) callback({ ok: true });
   });
 
   socket.on('delete-order', ({ id }) => {
@@ -82,7 +80,7 @@ io.on('connection', (socket) => {
     if (!order) return callback && callback({ ok: false });
     socket.join(`order-${id}`);
     const { qrDataUrl, customerUrl, ...orderData } = order;
-    callback({ ok: true, order: orderData });
+    if (callback) callback({ ok: true, order: orderData });
   });
 });
 
