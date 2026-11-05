@@ -99,17 +99,37 @@
     .btn-ready { background: var(--success); }
     .btn-qr { background: #475569; }
     .btn-delete { background: var(--danger); }
+    
     .modal-overlay {
       position: fixed; inset: 0; background: rgba(2, 6, 23, 0.95);
       display: flex; justify-content: center; align-items: center; z-index: 1000; padding: 20px;
     }
+    
+    /* 👇 السطر السحري الذي يصلح زر الإغلاق */
+    .modal-overlay[hidden] {
+      display: none !important;
+    }
+
     .modal-content {
       background: var(--card-bg); border: 1px solid var(--border); border-radius: 24px;
       width: 100%; max-width: 400px; overflow: hidden;
     }
-    .modal-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
+    .modal-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
     .modal-header h2 { font-size: 16px; }
-    .close-btn { background: none; color: white; font-size: 24px; padding: 0; }
+    
+    .close-btn { 
+      background: rgba(255, 255, 255, 0.1) !important; 
+      color: white !important; 
+      font-size: 24px; 
+      width: 40px; 
+      height: 40px; 
+      border-radius: 50%; 
+      padding: 0; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center;
+    }
+    
     .qr-container { padding: 24px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
     .qr-wrapper { background: white; padding: 16px; border-radius: 16px; width: 250px; height: 250px; display: flex; justify-content: center; align-items: center; }
     #qr-image { width: 100%; height: 100%; object-fit: contain; }
@@ -175,7 +195,7 @@
     </div>
   </main>
 
-  <div class="modal-overlay" id="qr-section" hidden>
+  <div class="modal-overlay" id="qr-section" hidden onclick="if(event.target === this) document.getElementById('close-qr').click();">
     <div class="modal-content">
       <div class="modal-header">
         <h2>امسح الكود لمتابعة الطلب</h2>
@@ -349,12 +369,11 @@
         
         actionsDiv.appendChild(createBtn('QR', 'btn-qr', () => showQrModal(order)));
 
-        // 👇 التعديل هنا: الحذف الفوري من الشاشة
         actionsDiv.appendChild(createBtn('حذف', 'btn-delete', () => {
           if (confirm('حذف هذا الطلب من الشاشة؟')) {
-            delete orders[order.id]; // حذف محلي
-            renderOrders(); // تحديث الشاشة فوراً
-            socket.emit('delete-order', { id: order.id }); // إعلام الخادم
+            delete orders[order.id];
+            renderOrders();
+            socket.emit('delete-order', { id: order.id });
           }
         }));
 
