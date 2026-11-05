@@ -1,35 +1,49 @@
-/**
- * Bipli — منطق لوحة الكاشير
- */
 const socket = io();
-
-const statusEl      = document.getElementById('status');
-const form          = document.getElementById('create-form');
-const numberInput   = document.getElementById('order-number');
-const qrSection     = document.getElementById('qr-section');
-const qrCanvas      = document.getElementById('qr-canvas');
-const qrOrderNumber = document.getElementById('qr-order-number');
-const closeQrBtn    = document.getElementById('close-qr');
-const ordersList    = document.getElementById('orders-list');
+const DOM = {
+  status: document.getElementById('status'),
+  form: document.getElementById('create-form'),
+  input: document.getElementById('order-number'),
+  submitBtn: document.getElementById('submit-btn'),
+  qrSection: document.getElementById('qr-section'),
+  qrImage: document.getElementById('qr-image'),
+  qrOrderNumber: document.getElementById('qr-order-number'),
+  closeQrBtn: document.getElementById('close-qr'),
+  ordersList: document.getElementById('orders-list'),
+  toastContainer: document.getElementById('toast-container')
+};
 
 let orders = {};
 
+/* ===== إدارة الإشعارات (Toasts) ===== */
+function showToast(message, type = 'success') {
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.textContent = message;
+  DOM.toastContainer.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
 /* ===== الاتصال ===== */
 socket.on('connect', () => {
-  statusEl.textContent = 'متصل';
-  statusEl.classList.replace('offline', 'online');
+  DOM.status.textContent = 'متصل';
+  DOM.status.className = 'status online';
   socket.emit('join-cashier');
+  showToast('تم الاتصال بالخادم', 'success');
 });
 
 socket.on('disconnect', () => {
-  statusEl.textContent = 'غير متصل';
-  statusEl.classList.replace('online', 'offline');
+  DOM.status.textContent = 'غير متصل';
+  DOM.status.className = 'status offline';
+  showToast('انقطع الاتصال!', 'error');
 });
 
 /* ===== استقبال البيانات ===== */
 socket.on('orders-snapshot', (list) => {
-  orders = {};
-  list.forEach((o) => (orders[o.id] = o));
+  orders = Object.fromEntries(list.map(o => [o.id, o]));
   renderOrders();
 });
 
@@ -49,130 +63,118 @@ socket.on('order-deleted', ({ id }) => {
 });
 
 /* ===== إنشاء طلب ===== */
-form.addEventListener('submit', (e) => {
+DOM.form.addEventListener('submit', (e) => {
   e.preventDefault();
-  const number = numberInput.value.trim();
+  const number = DOM.input.value.trim();
   if (!number) return;
 
+  // حالة التحميل لمنع النقر المتكرر
+  DOM.submitBtn.disabled = true;
+  DOM.submitBtn.textContent = 'جاري الإنشاء...';
+
   socket.emit('create-order', { number }, (res) => {
+    DOM.submitBtn.disabled = false;
+    DOM.submitBtn.textContent = 'إنشاء QR';
+
     if (res && res.ok) {
-      numberInput.value = '';
-      showQr(res.order);
+      DOM.input.value = '';
+      showQrModal(res.order);
+      showToast('تم إنشاء الطلب بنجاح');
     } else {
-      alert(res && res.error ? res.error : 'تعذّر إنشاء الطلب');
+      showToast(res.error || 'حدث خطأ', 'error');
     }
   });
 });
 
 /* ===== عرض QR ===== */
-function showQr(order) {
-  const url = `${window.location.origin}/customer/?id=${order.id}`;
-  
-  // 1. إظهار القسم أولاً وتحديث الرقم
-  qrOrderNumber.textContent = order.number;
-  
-  // 2. إضافة رابط بديل (في حال فشل الـ QR)
-  const qrInfo = document.querySelector('.qr-info');
-  let linkEl = document.getElementById('qr-direct-link');
-  if (!linkEl) {
-    linkEl = document.createElement('a');
-    linkEl.id = 'qr-direct-link';
-    linkEl.target = '_blank';
-    linkEl.textContent = 'أو اضغط هنا لفتح رابط العميل مباشرة';
-    linkEl.style.cssText = 'display:block; margin-top:10px; color:#3b82f6; font-size:13px; text-decoration:underline;';
-    qrInfo.appendChild(linkEl);
-  }
-  linkEl.href = url;
-
-  qrSection.hidden = false;
-  qrSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-  // 3. محاولة توليد صورة الـ QR
-  try {
-    if (typeof QRCode !== 'undefined') {
-      qrCanvas.style.display = 'block';
-      QRCode.toCanvas(qrCanvas, url, { width: 260, margin: 2 }, (err) => {
-        if (err) console.error('QR error:', err);
-      });
-    } else {
-      throw new Error('المكتبة غير محملة');
-    }
-  } catch (error) {
-    console.warn('QR Code library failed:', error);
-    qrCanvas.style.display = 'none'; // إخفاء الكانفاس الفارغ
-  }
+function showQrModal(order) {
+  DOM.qrOrderNumber.textContent = order.number;
+  DOM.qrImage.src = order.qrDataUrl; // الصورة جاهزة من الخادم
+  DOM.qrSection.hidden = false;
+  DOM.qrSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-closeQrBtn.addEventListener('click', () => (qrSection.hidden = true));
+DOM.closeQrBtn.addEventListener('click', () => {
+  DOM.qrSection.hidden = true;
+  DOM.qrImage.src = ''; // تنظيف الذاكرة
+});
 
-/* ===== رسم القائمة ===== */
+/* ===== رسم القائمة (احترافي وآمن) ===== */
 function renderOrders() {
   const list = Object.values(orders).sort((a, b) => b.createdAt - a.createdAt);
 
   if (list.length === 0) {
-    ordersList.innerHTML = '<p class="empty">لا توجد طلبات حالياً</p>';
+    DOM.ordersList.innerHTML = '<p class="empty">لا توجد طلبات حالياً</p>';
     return;
   }
 
-  ordersList.innerHTML = '';
+  DOM.ordersList.innerHTML = '';
+  
   list.forEach((order) => {
     const card = document.createElement('div');
     card.className = `order-card ${order.status}`;
 
-    const actions = [];
+    // بناء العناصر برمجياً (أكثر أماناً)
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'order-info';
+    
+    const numSpan = document.createElement('span');
+    numSpan.className = 'order-number';
+    numSpan.textContent = `#${order.number}`;
+    
+    const statusSpan = document.createElement('span');
+    statusSpan.className = 'order-status';
+    statusSpan.textContent = statusLabel(order.status);
+    
+    infoDiv.append(numSpan, statusSpan);
+
+    const actionsDiv = document.createElement('div');
+    actionsDiv.className = 'order-actions';
+
+    const createBtn = (text, className, onClick) => {
+      const btn = document.createElement('button');
+      btn.className = className;
+      btn.textContent = text;
+      btn.addEventListener('click', onClick);
+      return btn;
+    };
+
     if (order.status === 'waiting') {
-      actions.push(`<button class="btn-prepare" data-id="${order.id}">تحضير</button>`);
+      actionsDiv.appendChild(createBtn('تحضير', 'btn-prepare', () => 
+        updateStatus(order.id, 'preparing')
+      ));
     }
     if (order.status !== 'ready') {
-      actions.push(`<button class="btn-ready" data-id="${order.id}">جاهز</button>`);
+      actionsDiv.appendChild(createBtn('جاهز', 'btn-ready', () => 
+        updateStatus(order.id, 'ready')
+      ));
     }
-    actions.push(`<button class="btn-qr" data-id="${order.id}">QR</button>`);
+    
+    actionsDiv.appendChild(createBtn('QR', 'btn-qr', () => {
+      socket.emit('create-order', { number: order.number }, (res) => {
+        // لإعادة عرض الـ QR، نطلب من الخادم إنشاءه مجدداً (لأننا لا نحتفظ بالصورة للكاشير)
+        // في الإصدارات القادمة يمكن تحسين هذا
+      });
+      // حل مؤقت سريع: نعرض الـ QR من الذاكرة إن وجد
+      if (order.qrDataUrl) showQrModal(order);
+    }));
+
     if (order.status === 'ready') {
-      actions.push(`<button class="btn-delete" data-id="${order.id}">حذف</button>`);
+      actionsDiv.appendChild(createBtn('حذف', 'btn-delete', () => {
+        if (confirm('حذف هذا الطلب؟')) socket.emit('delete-order', { id: order.id });
+      }));
     }
 
-    card.innerHTML = `
-      <div class="order-info">
-        <span class="order-number">#${escapeHtml(order.number)}</span>
-        <span class="order-status">${statusLabel(order.status)}</span>
-      </div>
-      <div class="order-actions">${actions.join('')}</div>
-    `;
-
-    ordersList.appendChild(card);
+    card.append(infoDiv, actionsDiv);
+    DOM.ordersList.appendChild(card);
   });
-
-  bindActions();
 }
 
-function bindActions() {
-  ordersList.querySelectorAll('.btn-prepare').forEach((b) =>
-    b.addEventListener('click', () => socket.emit('mark-preparing', { id: b.dataset.id }))
-  );
-  ordersList.querySelectorAll('.btn-ready').forEach((b) =>
-    b.addEventListener('click', () => socket.emit('mark-ready', { id: b.dataset.id }))
-  );
-  ordersList.querySelectorAll('.btn-qr').forEach((b) =>
-    b.addEventListener('click', () => {
-      const o = orders[b.dataset.id];
-      if (o) showQr(o);
-    })
-  );
-  ordersList.querySelectorAll('.btn-delete').forEach((b) =>
-    b.addEventListener('click', () => {
-      if (confirm('حذف هذا الطلب؟')) {
-        socket.emit('delete-order', { id: b.dataset.id });
-      }
-    })
-  );
+function updateStatus(id, status) {
+  socket.emit('update-status', { id, status });
 }
 
 function statusLabel(s) {
-  return { waiting: 'قيد الانتظار', preparing: 'قيد التحضير', ready: 'جاهز ✓' }[s] || s;
-}
-
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-  }[c]));
+  const labels = { waiting: 'قيد الانتظار', preparing: 'قيد التحضير', ready: 'جاهز ✓' };
+  return labels[s] || s;
 }
