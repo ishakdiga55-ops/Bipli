@@ -4,14 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bipli | لوحة التحكم</title>
+  
+  <!-- خط Cairo -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  
   <link rel="stylesheet" href="style.css" />
   
-  <!-- مكتبة رسم الكود داخل المتصفح (رابط موثوق جداً) -->
+  <!-- مكتبة توليد الـ QR (مباشرة داخل المتصفح) -->
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   
+  <!-- اتصال Socket.io -->
   <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
@@ -26,6 +30,7 @@
   </header>
 
   <main class="dashboard">
+    <!-- شريط الإحصائيات -->
     <section class="stats-grid">
       <div class="stat-card">
         <span class="stat-title">إجمالي الطلبات</span>
@@ -42,6 +47,7 @@
     </section>
 
     <div class="layout-grid">
+      <!-- إنشاء الطلب -->
       <section class="card action-card">
         <div class="card-header">
           <h2>إنشاء طلب جديد</h2>
@@ -57,6 +63,7 @@
         </form>
       </section>
 
+      <!-- الطلبات النشطة -->
       <section class="card orders-section">
         <div class="card-header">
           <h2>الطلبات النشطة</h2>
@@ -68,6 +75,7 @@
     </div>
   </main>
 
+  <!-- نافذة عرض الـ QR -->
   <div class="modal-overlay" id="qr-section" hidden>
     <div class="modal-content">
       <div class="modal-header">
@@ -76,6 +84,7 @@
       </div>
       <div class="qr-container">
         <div class="qr-wrapper">
+          <!-- هنا سيتم رسم الكود -->
           <canvas id="qr-canvas"></canvas>
         </div>
         <div class="qr-info">
@@ -87,7 +96,20 @@
     </div>
   </div>
 
+  <!-- حاوية الإشعارات -->
   <div id="toast-container" class="toast-container"></div>
+
+  <!-- أداة لفحص الأخطاء: ستخبرك إذا فشلت مكتبة الـ QR في التحميل -->
+  <script>
+    window.addEventListener('load', () => {
+      if (typeof QRCode === 'undefined') {
+        const errDiv = document.createElement('div');
+        errDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;background:red;color:white;text-align:center;padding:10px;z-index:9999;font-family:sans-serif;';
+        errDiv.innerHTML = '⚠️ خطأ: لم يتم تحميل مكتبة الـ QR. تأكد من اتصالك بالإنترنت أو قم بإيقاف مانع الإعلانات (AdBlock).';
+        document.body.appendChild(errDiv);
+      }
+    });
+  </script>
 
   <script src="app.js"></script>
 </body>
