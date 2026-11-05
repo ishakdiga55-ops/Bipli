@@ -67,12 +67,40 @@ form.addEventListener('submit', (e) => {
 /* ===== عرض QR ===== */
 function showQr(order) {
   const url = `${window.location.origin}/customer/?id=${order.id}`;
-  QRCode.toCanvas(qrCanvas, url, { width: 260, margin: 2 }, (err) => {
-    if (err) console.error('QR error:', err);
-  });
+  
+  // 1. إظهار القسم أولاً وتحديث الرقم
   qrOrderNumber.textContent = order.number;
+  
+  // 2. إضافة رابط بديل (في حال فشل الـ QR)
+  const qrInfo = document.querySelector('.qr-info');
+  let linkEl = document.getElementById('qr-direct-link');
+  if (!linkEl) {
+    linkEl = document.createElement('a');
+    linkEl.id = 'qr-direct-link';
+    linkEl.target = '_blank';
+    linkEl.textContent = 'أو اضغط هنا لفتح رابط العميل مباشرة';
+    linkEl.style.cssText = 'display:block; margin-top:10px; color:#3b82f6; font-size:13px; text-decoration:underline;';
+    qrInfo.appendChild(linkEl);
+  }
+  linkEl.href = url;
+
   qrSection.hidden = false;
   qrSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // 3. محاولة توليد صورة الـ QR
+  try {
+    if (typeof QRCode !== 'undefined') {
+      qrCanvas.style.display = 'block';
+      QRCode.toCanvas(qrCanvas, url, { width: 260, margin: 2 }, (err) => {
+        if (err) console.error('QR error:', err);
+      });
+    } else {
+      throw new Error('المكتبة غير محملة');
+    }
+  } catch (error) {
+    console.warn('QR Code library failed:', error);
+    qrCanvas.style.display = 'none'; // إخفاء الكانفاس الفارغ
+  }
 }
 
 closeQrBtn.addEventListener('click', () => (qrSection.hidden = true));
