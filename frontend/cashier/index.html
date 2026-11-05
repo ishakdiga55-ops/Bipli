@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bipli — لوحة الكاشير</title>
   <link rel="stylesheet" href="style.css" />
-  <!-- تم تغيير الرابط إلى unpkg لضمان العمل -->
-  <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
@@ -15,28 +13,23 @@
       <span class="logo">🛎️</span>
       <h1>Bipli</h1>
     </div>
-    <span id="status" class="status offline">غير متصل</span>
+    <span id="status" class="status offline">جاري الاتصال...</span>
   </header>
 
   <main>
     <section class="card create-section">
       <h2>إنشاء طلب جديد</h2>
       <form id="create-form">
-        <input
-          type="text"
-          id="order-number"
-          placeholder="مثال: 42 أو A-15"
-          required
-          autocomplete="off"
-        />
-        <button type="submit">إنشاء QR</button>
+        <input type="text" id="order-number" placeholder="مثال: 42 أو A-15" required autocomplete="off" />
+        <button type="submit" id="submit-btn">إنشاء QR</button>
       </form>
     </section>
 
     <section class="card qr-section" id="qr-section" hidden>
       <h2>امسح الكود لمتابعة الطلب</h2>
       <div class="qr-container">
-        <canvas id="qr-canvas"></canvas>
+        <!-- نستخدم img بدلاً من canvas لأن الخادم هو من يولد الصورة -->
+        <img id="qr-image" src="" alt="QR Code" width="260" height="260" />
         <div class="qr-info">
           <p>رقم الطلب: <strong id="qr-order-number"></strong></p>
           <p class="hint">اطلب من العميل مسح الكود بكاميرا الهاتف</p>
@@ -52,6 +45,9 @@
       </div>
     </section>
   </main>
+
+  <!-- حاوية الإشعارات المنبثقة -->
+  <div id="toast-container" class="toast-container"></div>
 
   <script src="app.js"></script>
 </body>
