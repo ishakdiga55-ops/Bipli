@@ -5,12 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bipli | لوحة التحكم</title>
   
-  <!-- خط Cairo -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
   
-  <!-- كود التصميم (CSS) -->
   <style>
     :root {
       --bg-dark: #0f172a;
@@ -19,8 +17,8 @@
       --primary: #6366f1;
       --primary-hover: #4f46e5;
       --text-main: #f8fafc;
-      --مtext-muted: #94a3b8;
- بح      --border: rgba(ذفه255, 255, وإن 255, 0.1);
+      --text-muted: #94a3b8;
+      --border: rgba(255, 255, 255, 0.1);
       --success: #10b981;
       --warning: #f59e0b;
       --danger: #ef4444;
@@ -185,10 +183,9 @@
       </div>
       <div class="qr-container">
         <div class="qr-wrapper">
-          <!-- حماية: إذا فشلت الصورة سيظهر تنبيه بدلاً من المربع المكسور -->
           <img id="qr-image" src="" alt="" onerror="this.style.display='none'; document.getElementById('qr-error-msg').style.display='block';" onload="this.style.display='block'; document.getElementById('qr-error-msg').style.display='none';" />
           <div id="qr-error-msg" style="display: none; color: #ef4444; font-weight: bold; text-align: center; font-size: 14px;">
-            ⚠️ تعذر تحميل الصورة.<br>هذا الطلب قديم، قشاء طلب جديد.
+            ⚠️ تعذر تحميل الصورة.<br>هذا الطلب قديم، قم بحذفه وإنشاء طلب جديد.
           </div>
         </div>
         <div class="qr-info">
@@ -202,7 +199,6 @@
 
   <div id="toast-container" class="toast-container"></div>
 
-  <!-- كود البرمجة (JavaScript) -->
   <script>
     const socket = io();
     const DOM = {
@@ -287,7 +283,6 @@
     function showQrModal(order) {
       if (!order) return;
       
-      // التحقق من وجود الصورة
       if (!order.qrDataUrl) {
         alert('هذا الطلب قديم. يرجى حذفه وإنشاء طلب جديد.');
         return; 
@@ -354,8 +349,13 @@
         
         actionsDiv.appendChild(createBtn('QR', 'btn-qr', () => showQrModal(order)));
 
+        // 👇 التعديل هنا: الحذف الفوري من الشاشة
         actionsDiv.appendChild(createBtn('حذف', 'btn-delete', () => {
-          if (confirm('حذف هذا الطلب؟')) socket.emit('delete-order', { id: order.id });
+          if (confirm('حذف هذا الطلب من الشاشة؟')) {
+            delete orders[order.id]; // حذف محلي
+            renderOrders(); // تحديث الشاشة فوراً
+            socket.emit('delete-order', { id: order.id }); // إعلام الخادم
+          }
         }));
 
         card.append(infoDiv, actionsDiv);
