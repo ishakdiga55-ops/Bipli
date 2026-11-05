@@ -5,7 +5,7 @@ const DOM = {
   input: document.getElementById('order-number'),
   submitBtn: document.getElementById('submit-btn'),
   qrSection: document.getElementById('qr-section'),
-  qrCanvas: document.getElementById('qr-canvas'),
+  qrImage: document.getElementById('qr-image'),
   qrOrderNumber: document.getElementById('qr-order-number'),
   closeQrBtn: document.getElementById('close-qr'),
   ordersList: document.getElementById('orders-list'),
@@ -81,35 +81,17 @@ DOM.form.addEventListener('submit', (e) => {
 function showQrModal(order) {
   if (!order) return;
   
-  // بناء الرابط ديناميكياً (حتى لو كان الطلب قديماً)
-  const url = order.customerUrl || (window.location.origin + '/customer/?id=' + order.id);
-  
   DOM.qrOrderNumber.textContent = order.number;
+  
+  // 👇 السر هنا: نطلب الصورة من الخادم مباشرة كملف
+  DOM.qrImage.src = `/api/qr/${order.id}?t=${Date.now()}`;
+  
   DOM.qrSection.hidden = false;
-
-  // مسح الكانفاس القديم
-  const ctx = DOM.qrCanvas.getContext('2d');
-  ctx.clearRect(0, 0, DOM.qrCanvas.width, DOM.qrCanvas.height);
-
-  // رسم الكود
-  if (typeof QRCode !== 'undefined') {
-    QRCode.toCanvas(DOM.qrCanvas, url, {
-      width: 220,
-      margin: 2,
-      color: { dark: '#0f172a', light: '#ffffff' }
-    }, function (error) {
-      if (error) {
-        console.error('QR Error:', error);
-        alert('حدث خطأ في رسم الكود: ' + error.message);
-      }
-    });
-  } else {
-    alert('مكتبة الـ QR لم يتم تحميلها، يرجى التأكد من اتصالك بالإنترنت وتحديث الصفحة.');
-  }
 }
 
 DOM.closeQrBtn.addEventListener('click', () => {
   DOM.qrSection.hidden = true;
+  DOM.qrImage.src = ''; // مسح الذاكرة
 });
 
 function renderOrders() {
