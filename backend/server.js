@@ -4,7 +4,6 @@ const path = require('path');
 const cors = require('cors');
 const { Server } = require('socket.io');
 const QRCode = require('qrcode');
-const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const server = http.createServer(app);
@@ -20,6 +19,10 @@ app.get('/', (req, res) => res.redirect('/cashier/'));
 
 const orders = new Map();
 
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
+}
+
 io.on('connection', (socket) => {
   socket.on('join-cashier', () => {
     socket.join('cashier-room');
@@ -31,12 +34,10 @@ io.on('connection', (socket) => {
       const num = (number || '').toString().trim();
       if (!num) throw new Error('رقم الطلب مطلوب');
 
-      const id = uuidv4();
-      // تأكد من أن هذا هو رابط موقعك الحالي
+      const id = generateId();
       const origin = 'https://bipli-1.onrender.com'; 
       const customerUrl = `${origin}/customer/?id=${id}`;
       
-      // 👇 توليد الصورة كـ Base64 داخل الخادم (الطريقة الأكثر أماناً)
       const qrDataUrl = await QRCode.toDataURL(customerUrl, { width: 300, margin: 2 });
 
       const order = {
@@ -44,8 +45,6 @@ io.on('connection', (socket) => {
       };
 
       orders.set(id, order);
-      
-      // إرسال الطلب للكاشير
       io.to('cashier-room').emit('order-created', order);
       if (callback) callback({ ok: true, order });
     } catch (error) {
@@ -56,14 +55,10 @@ io.on('connection', (socket) => {
   socket.on('update-status', ({ id, status }, callback) => {
     const order = orders.get(id);
     if (!order) return callback && callback({ ok: false });
-    
     order.status = status;
     if (status === 'ready') order.readyAt = Date.now();
-    
-    // إرسال التحديث للعميل والكاشير (مع الحفاظ على الصورة)
     io.to(`order-${id}`).emit(status === 'ready' ? 'order-ready' : 'order-updated', order);
     io.to('cashier-room').emit('order-updated', order);
-    
     if (callback) callback({ ok: true });
   });
 
