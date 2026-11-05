@@ -3,6 +3,7 @@ const http = require('http');
 const path = require('path');
 const cors = require('cors');
 const { Server } = require('socket.io');
+const QRCode = require('qrcode');
 const { v4: uuidv4 } = require('uuid');
 
 const app = express();
@@ -19,6 +20,26 @@ app.get('/', (req, res) => res.redirect('/cashier/'));
 
 const orders = new Map();
 
+// 👇 الرابط الذي سيولد صورة الـ QR من الخادم مباشرة
+app.get('/api/qr/:id', async (req, res) => {
+  const order = orders.get(req.params.id);
+  if (!order) return res.status(404).send('الطلب غير موجود');
+  
+  try {
+    // توليد الصورة كملف بياني (Buffer)
+    const qrBuffer = await QRCode.toBuffer(order.customerUrl, { 
+      width: 300, 
+      margin: 2,
+      color: { dark: '#0f172a', light: '#ffffff' }
+    });
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'no-store'); // منع الاحتفاظ بالصورة في المتصفح
+    res.send(qrBuffer);
+  } catch (err) {
+    res.status(500).send('Error generating QR');
+  }
+});
+
 io.on('connection', (socket) => {
   socket.on('join-cashier', () => {
     socket.join('cashier-room');
@@ -31,7 +52,7 @@ io.on('connection', (socket) => {
       if (!num) throw new Error('رقم الطلب مطلوب');
 
       const id = uuidv4();
-      const origin = 'https://bipli-1.onrender.com'; 
+      const origin = 'https://bipli-1.onrender.com'; // رابطك الأساسي
       const customerUrl = `${origin}/customer/?id=${id}`;
       
       const order = {
