@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bipli — لوحة الكاشير</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="logo">🛎️</span>
+      <h1>Bipli</h1>
+    </div>
+    <span id="status" class="status offline">غير متصل</span>
+  </header>
+
+  <main>
+    <section class="card create-section">
+      <h2>إنشاء طلب جديد</h2>
+      <form id="create-form">
+        <input
+          type="text"
+          id="order-number"
+          placeholder="مثال: 42 أو A-15"
+          required
+          autocomplete="off"
+        />
+        <button type="submit">إنشاء QR</button>
+      </form>
+    </section>
+
+    <section class="card qr-section" id="qr-section" hidden>
+      <h2>امسح الكود لمتابعة الطلب</h2>
+      <div class="qr-container">
+        <canvas id="qr-canvas"></canvas>
+        <div class="qr-info">
+          <p>رقم الطلب: <strong id="qr-order-number"></strong></p>
+          <p class="hint">اطلب من العميل مسح الكود بكاميرا الهاتف</p>
+        </div>
+      </div>
+      <button id="close-qr" class="btn-secondary">إغلاق</button>
+    </section>
+
+    <section class="card orders-section">
+      <h2>الطلبات النشطة</h2>
+      <div id="orders-list" class="orders-list">
+        <p class="empty">لا توجد طلبات حالياً</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
