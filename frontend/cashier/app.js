@@ -79,13 +79,16 @@ DOM.form.addEventListener('submit', (e) => {
 });
 
 function showQrModal(order) {
-  if (!order || !order.qrDataUrl) {
-    showToast('تعذر تحميل صورة الـ QR', 'error');
-    return;
+  if (!order) return;
+  
+  // 🛑 الحماية: إذا كان الطلب قديماً (الخادم نام ومسحه)، لا تفتح النافذة
+  if (!order.qrDataUrl) {
+    alert('هذا الطلب قديم (قام الخادم بإيقافه مؤقتاً).\nيرجى الضغط على "حذف" وإنشاء طلب جديد.');
+    return; 
   }
   
   DOM.qrOrderNumber.textContent = order.number;
-  DOM.qrImage.src = order.qrDataUrl; // الصورة جاهزة 100%
+  DOM.qrImage.src = order.qrDataUrl; 
   DOM.qrSection.hidden = false;
 }
 
@@ -145,11 +148,10 @@ function renderOrders() {
     
     actionsDiv.appendChild(createBtn('QR', 'btn-qr', () => showQrModal(order)));
 
-    if (order.status === 'ready') {
-      actionsDiv.appendChild(createBtn('حذف', 'btn-delete', () => {
-        if (confirm('حذف هذا الطلب؟')) socket.emit('delete-order', { id: order.id });
-      }));
-    }
+    // جعلنا زر الحذف يظهر دائماً لتنظيف الطلبات القديمة
+    actionsDiv.appendChild(createBtn('حذف', 'btn-delete', () => {
+      if (confirm('حذف هذا الطلب؟')) socket.emit('delete-order', { id: order.id });
+    }));
 
     card.append(infoDiv, actionsDiv);
     DOM.ordersList.appendChild(card);
