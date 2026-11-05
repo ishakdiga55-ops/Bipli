@@ -20,6 +20,21 @@ app.get('/', (req, res) => res.redirect('/cashier/'));
 
 const orders = new Map();
 
+// 👇 الرابط الجديد الذي يولد صورة الـ QR مباشرة (احترافي جداً)
+app.get('/api/qr/:id', async (req, res) => {
+  const order = orders.get(req.params.id);
+  if (!order) return res.status(404).send('Not found');
+  try {
+    // توليد الصورة كملف بياني وليس كنص
+    const qrBuffer = await QRCode.toBuffer(order.customerUrl, { width: 300, margin: 2 });
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'no-store'); // منع الاحتفاظ بالصورة القديمة
+    res.send(qrBuffer);
+  } catch (err) {
+    res.status(500).send('Error generating QR');
+  }
+});
+
 io.on('connection', (socket) => {
   socket.on('join-cashier', () => {
     socket.join('cashier-room');
@@ -32,16 +47,13 @@ io.on('connection', (socket) => {
       if (!num) throw new Error('رقم الطلب مطلوب');
 
       const id = uuidv4();
-      const origin = process.env.NODE_ENV === 'production' 
-        ? 'https://bipli-1.onrender.com' 
-        : 'http://localhost:3000';
-      
+      // تثبيت رابط السيرفر لضمان عمل الكود على الهاتف
+      const origin = 'https://bipli-1.onrender.com'; 
       const customerUrl = `${origin}/customer/?id=${id}`;
-      const qrDataUrl = await QRCode.toDataURL(customerUrl, { width: 300, margin: 2 });
-
+      
       const order = {
         id, number: num, status: 'waiting', createdAt: Date.now(), readyAt: null,
-        qrDataUrl, customerUrl
+        customerUrl 
       };
 
       orders.set(id, order);
@@ -60,10 +72,8 @@ io.on('connection', (socket) => {
     order.status = status;
     if (status === 'ready') order.readyAt = Date.now();
     
-    const { qrDataUrl, customerUrl, ...orderData } = order;
-    
-    io.to(`order-${id}`).emit(status === 'ready' ? 'order-ready' : 'order-updated', orderData);
-    io.to('cashier-room').emit('order-updated', orderData);
+    io.to(`order-${id}`).emit(status === 'ready' ? 'order-ready' : 'order-updated', order);
+    io.to('cashier-room').emit('order-updated', order);
     
     if (callback) callback({ ok: true });
   });
@@ -79,8 +89,7 @@ io.on('connection', (socket) => {
     const order = orders.get(id);
     if (!order) return callback && callback({ ok: false });
     socket.join(`order-${id}`);
-    const { qrDataUrl, customerUrl, ...orderData } = order;
-    if (callback) callback({ ok: true, order: orderData });
+    if (callback) callback({ ok: true, order });
   });
 });
 
