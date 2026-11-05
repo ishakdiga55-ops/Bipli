@@ -1,0 +1,184 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f1f5f9;
+  --card: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --primary: #3b82f6;
+  --primary-2: #8b5cf6;
+  --success: #22c55e;
+  --warning: #eab308;
+}
+
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+header {
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  color: white;
+  padding: 14px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.brand { display: flex; align-items: center; gap: 10px; }
+.logo { font-size: 24px; }
+header h1 {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  background: linear-gradient(135deg, #60a5fa, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.status {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.status.online  { background: rgba(34, 197, 94, 0.2);  color: #4ade80; }
+.status.offline { background: rgba(239, 68, 68, 0.2);  color: #f87171; }
+
+main {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 24px;
+  display: grid;
+  gap: 20px;
+}
+
+.card {
+  background: var(--card);
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+}
+
+.card h2 {
+  font-size: 16px;
+  margin-bottom: 16px;
+  color: #475569;
+  font-weight: 700;
+}
+
+/* ===== نموذج الإنشاء ===== */
+#create-form { display: flex; gap: 12px; }
+
+#order-number {
+  flex: 1;
+  padding: 14px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+#order-number:focus { border-color: var(--primary); }
+
+button {
+  padding: 14px 24px;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.2s;
+  font-family: inherit;
+}
+button:hover  { opacity: 0.9; }
+button:active { transform: scale(0.97); }
+
+#create-form button {
+  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  color: white;
+}
+
+/* ===== QR ===== */
+.qr-section { text-align: center; }
+
+.qr-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 22px;
+  background: #f8fafc;
+  border-radius: 14px;
+  margin-bottom: 16px;
+}
+
+#qr-canvas {
+  border-radius: 8px;
+  background: white;
+  padding: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.qr-info p { margin: 4px 0; font-size: 15px; }
+.qr-info strong { font-size: 22px; color: var(--primary); }
+.hint { font-size: 12px; color: var(--muted); }
+
+.btn-secondary { background: #e2e8f0; color: #475569; }
+
+/* ===== القائمة ===== */
+.orders-list { display: flex; flex-direction: column; gap: 10px; }
+
+.empty {
+  text-align: center;
+  color: #94a3b8;
+  padding: 24px 0;
+  font-size: 14px;
+}
+
+.order-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border-right: 4px solid #94a3b8;
+  flex-wrap: wrap;
+  transition: background 0.2s;
+}
+.order-card.waiting   { border-right-color: var(--warning); }
+.order-card.preparing { border-right-color: var(--primary); }
+.order-card.ready     { border-right-color: var(--success); background: #f0fdf4; }
+
+.order-info { display: flex; flex-direction: column; gap: 2px; }
+.order-number { font-size: 18px; font-weight: 800; }
+.order-status { font-size: 13px; color: var(--muted); }
+
+.order-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.order-actions button {
+  padding: 8px 16px;
+  font-size: 13px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.btn-prepare { background: #dbeafe; color: #1d4ed8; }
+.btn-ready   { background: var(--success); color: white; }
+.btn-qr      { background: #e2e8f0; color: #475569; }
+.btn-delete  { background: #fee2e2; color: #dc2626; }
+
+@media (max-width: 560px) {
+  #create-form { flex-direction: column; }
+  .order-card  { flex-direction: column; align-items: stretch; }
+  .order-actions { justify-content: space-between; }
+}
